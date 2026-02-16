@@ -1,0 +1,19 @@
+[build]
+# Incremental compilation for faster builds
+incremental = true
+
+[target.x86_64-pc-windows-msvc]
+# Windows-specific linker settings
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+
+[target.x86_64-unknown-linux-gnu]
+# Linux-specific linker settings
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+
+[alias]
+# Convenient aliases
+b = "build"
+br = "build --release"
+t = "test"
+r = "run"
+c = "check"

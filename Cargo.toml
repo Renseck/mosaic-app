@@ -1,0 +1,15 @@
+[package]
+name = "mosaic-app"
+version = "0.1.0"
+edition = "2024"
+rust-version = "rustc 1.93.1 (01f6ddf75 2026-02-11)"
+authors = ["Renseck <77611329+Renseck@users.noreply.github.com>"]
+description = "A new Rust project"
+readme = "README.md"
+homepage = "https://github.com/Renseck/mosaic-app"
+repository = "https://github.com/Renseck/mosaic-app"
+license = "MIT"
+keywords = ["cli", "tool"]
+categories = ["command-line-utilities"]
+
+[dependencies]
