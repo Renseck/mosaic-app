@@ -22,11 +22,11 @@ impl IntoResponse for AppError {
         let status = match &self {
             Self::NotFound(_) => StatusCode::NOT_FOUND,
             Self::Unauthorized => StatusCode::UNAUTHORIZED,
-            Self::Forbidden => StatusCode::FORBIDDENm
+            Self::Forbidden => StatusCode::FORBIDDEN,
             Self::Validation(_) => StatusCode::BAD_REQUEST,
             Self::Internal(_) | Self::Database(_) => StatusCode::INTERNAL_SERVER_ERROR,
         };
-        let body = serde_json::json!({"error": self.to_string() })
+        let body = serde_json::json!({"error": self.to_string() });
         (status, axum::Json(body)).into_response()
     }
 }

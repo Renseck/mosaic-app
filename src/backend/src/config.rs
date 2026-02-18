@@ -16,7 +16,7 @@ impl AppConfig {
     pub fn from_env() -> Result<Self, env::VarError> {
         Ok(Self {
             database_url: env::var("DATABASE_URL")?,
-            grafana_internal_url: env::var("GRAFANA_INTERAL_URL")?,
+            grafana_internal_url: env::var("GRAFANA_INTERNAL_URL")?,
             grafana_service_account_token: env::var("GRAFANA_SERVICE_ACCOUNT_TOKEN")?,
             nocodb_internal_url: env::var("NOCODB_INTERNAL_URL")?,
             nocodb_api_token: env::var("NOCODB_API_TOKEN")?,

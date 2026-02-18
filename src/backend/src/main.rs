@@ -28,7 +28,7 @@ async fn main() {
     tracing::info!("Connected to database");
 
     // Run migrations
-    sqlx::migeate!("src/db/migrations")
+    sqlx::migrate!("src/db/migrations")
         .run(&pool)
         .await
         .expect("Failed to run migrations");
