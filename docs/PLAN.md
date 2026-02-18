@@ -6,7 +6,7 @@ The project has a complete file structure scaffolded (all files exist but are em
 
 ---
 
-## Phase 1: Foundation
+## Phase 1: Foundation [DONE]
 
 **Goal**: Docker Compose runs Postgres + Grafana + NocoDB. The Axum backend starts, connects to Postgres, runs migrations to create the `portal` schema, and responds to a health check. Everything compiles and connects.
 

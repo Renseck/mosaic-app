@@ -1,0 +1,51 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    environment:
+      POSTGRES_DB: portal_db
+      POSTGRES_USER: portal
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secret}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U portal -d portal_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    expose:
+      - "5432"
+    ports:
+      - "5432:5432" # Exposed for local dev; remove in production
+
+  grafana:
+    image: grafana/grafana:latest
+    depends_on:
+      - postgres: { condition: service_healthy }
+    environment:
+      GF_DATABASE_TYPE: postgres
+      GF_DATABASE_HOST: postgres:5432
+      GF_DATABASE_NAME: grafana
+      GF_DATABASE_USER: portal
+      GF_DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-secret}
+      GF_SECURITY_ALLOW_EMBEDDING: "true"
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_SERVER_SERVE_FROM_SUB_PATH: "true"
+      GF_SERVER_ROOT_URL: "%(protocol)s://%(domain)s:%(http_port)s/proxy/grafana/"
+    expose:
+      - "3000"
+    # NOT exposed to host — only accessible via internal network
+
+  nocodb:
+    image: nocodb/nocodb:latest
+    depends_on:
+      postgres: { condition: service_healthy }
+    environment:
+      NC_DB: "pg://postgres:5432?u=portal&p=${POSTGRES_PASSWORD:-secret}&d=nocodb"
+    expose:
+      - "8090"
+    # NOT exposed to host — only accessible via internal network
+
+volumes:
+  pgdata:

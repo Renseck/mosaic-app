@@ -4,12 +4,44 @@ version = "0.1.0"
 edition = "2024"
 rust-version = "1.93.1"
 authors = ["Renseck <77611329+Renseck@users.noreply.github.com>"]
-description = "A new Rust project"
+description = "Personal data portal - Axum backend"
 readme = "README.md"
 homepage = "https://github.com/Renseck/mosaic-app"
 repository = "https://github.com/Renseck/mosaic-app"
 license = "MIT"
-keywords = ["cli", "tool"]
-categories = ["command-line-utilities"]
 
 [dependencies]
+axum = { version = "0.8.8", features = ["macros"] }
+tokio = { version = "1.49.0", features = ["full"] }
+tower-http = { version = "0.6.8", features = ["cors", "fs", "trace"] }
+
+# =============================================================================================== #
+
+# Database
+sqlx = { version = "0.8.6", features = [
+    "chrono", 
+    "migrate", 
+    "postgres", 
+    "runtime-tokio", 
+    "tls-rustls", 
+    "uuid"
+] }
+
+# Serialization
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
+
+# Config
+dotenv = "0.15.0"
+
+# Error handling
+thiserror = "2.0.18"
+anyhow = "1.0.101"
+
+# Types
+uuid = { version = "1.21.0", features = ["v4", "serde"] }
+chrono = { version = "0.4.43", features = ["serde"] }
+
+# Logging
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }

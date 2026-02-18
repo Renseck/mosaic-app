@@ -516,7 +516,7 @@ services:
     environment:
       NC_DB: "pg://postgres:5432?u=portal&p=${POSTGRES_PASSWORD}&d=nocodb"
     expose:
-      - "8080"
+      - "8090"
 
   portal:
     build: .

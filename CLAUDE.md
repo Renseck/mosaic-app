@@ -340,6 +340,15 @@ Portal tables live in the `portal` schema. Key tables: `users`, `sessions`, `das
 - **Do not** use `unwrap()` or `expect()` in handler code — propagate errors via `AppError` and `?`
 - **Do not** add `#[allow(unused)]` to suppress warnings long-term — fix or remove dead code
 
+## Working Preferences
+
+- **Code proposals only**: Always propose code in chat with file paths and line numbers. Do not directly edit files. The user reviews and applies changes manually.
+- **Local dev setup**: When running outside Docker, `.env` uses `localhost` URLs (not Docker-internal hostnames like `postgres`, `grafana`, `nocodb`). Docker-internal hostnames are only used in docker-compose environment variables.
+- **Migration naming**: Use timestamp format: `YYYYMMDDHHMMSS_description.sql` (e.g., `20260217000001_initial_schema.sql`).
+- **Latest service versions**: Grafana, NocoDB, Postgres `18-alpine`.
+- **Init-db pattern**: `src/init-db.sql` is mounted into Postgres as `/docker-entrypoint-initdb.d/01-init.sql` to create the `grafana` and `nocodb` databases at first startup.
+
+
 ## When Compacting
 
 Always preserve: the full project structure listing, all code snippets in Mandatory Patterns, the API routes table, the Do Not list, and the names of any files modified in the current session.
