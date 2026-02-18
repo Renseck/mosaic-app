@@ -1,10 +1,12 @@
-IF (NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'portal'))
-BEGIN
-    EXEC ('CREATE SCHEMA [portal] AUTHORIZATION [dbo]')
-END
+-- IF (NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'portal'))
+-- BEGIN
+--     EXEC ('CREATE SCHEMA [portal] AUTHORIZATION [dbo]')
+-- END
+
+CREATE SCHEMA IF NOT EXISTS portal;
 
 -- Users & Auth
-CREATE TABLE portal.users (
+CREATE TABLE IF NOT EXISTS portal.users (
     id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     username      VARCHAR(64) UNIQUE NOT NULL,
     email         VARCHAR(255),
@@ -14,7 +16,7 @@ CREATE TABLE portal.users (
     updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE portal.sessions (
+CREATE TABLE IF NOT EXISTS portal.sessions (
     id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id    UUID NOT NULL REFERENCES portal.users(id) ON DELETE CASCADE,
     token_hash TEXT NOT NULL,
@@ -22,11 +24,11 @@ CREATE TABLE portal.sessions (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_sessions_token_hash ON portal.sessions(token_hash);
-CREATE INDEX idx_sessions_user_id ON portal.sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_token_hash ON portal.sessions(token_hash);
+CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON portal.sessions(user_id);
 
 -- Dashboards & Panels
-CREATE TABLE portal.dashboards (
+CREATE TABLE IF NOT EXISTS portal.dashboards (
     id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     owner_id   UUID REFERENCES portal.users(id),
     title      VARCHAR(255) NOT NULL,
@@ -38,7 +40,7 @@ CREATE TABLE portal.dashboards (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE portal.panels (
+CREATE TABLE IF NOT EXISTS  portal.panels (
     id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     dashboard_id UUID NOT NULL REFERENCES portal.dashboards(id) ON DELETE CASCADE,
     title        VARCHAR(255),
@@ -53,10 +55,10 @@ CREATE TABLE portal.panels (
     updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_panels_dashboard_id ON portal.panels(dashboard_id);
+CREATE INDEX IF NOT EXISTS idx_panels_dashboard_id ON portal.panels(dashboard_id);
 
 -- Dataset Templates
-CREATE TABLE portal.dataset_templates (
+CREATE TABLE IF NOT EXISTS portal.dataset_templates (
     id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name                  VARCHAR(255) NOT NULL,
     description           TEXT,

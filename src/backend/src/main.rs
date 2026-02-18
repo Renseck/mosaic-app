@@ -1,12 +1,34 @@
 mod api;
+mod auth;
 mod config;
 mod db;
 mod error;
+mod orchestrator;
+mod proxy;
+mod spa;
 
+use axum::extract::FromRef;
 use config::AppConfig;
 use db::pool::create_pool;
+use sqlx::PgPool;
 use tracing_subscriber::EnvFilter;
 
+/// Shared application state injected into all handlers via Axum's `State` extractors.
+#[derive(Clone)]
+pub struct AppState {
+    pub pool: PgPool,
+    pub config: AppConfig,
+}
+
+/// Allows extractors (e.g. `AuthenticatedUser`) to pull the pool directly from state
+/// without needing to import `AppState`.
+impl FromRef<AppState> for PgPool {
+    fn from_ref(state: &AppState) -> Self {
+        state.pool.clone()
+    }
+}
+
+/* ============================================================================================== */
 #[tokio::main]
 async fn main() {
     // Load .env file (look in src/ directory and parent)
@@ -34,14 +56,18 @@ async fn main() {
         .expect("Failed to run migrations");
     tracing::info!("Migrations applied");
 
+    // Clone before moving into state
+    let bind_address = config.bind_address.clone();
+    let state = AppState { pool, config };
+
     // Build router
-    let app = api::router();
+    let app = api::router(state);
 
     // Start server
-    let listener = tokio::net::TcpListener::bind(&config.bind_address)
+    let listener = tokio::net::TcpListener::bind(&bind_address)
         .await
         .expect("Failed to bind address");
-    tracing::info!("Listening on {}", config.bind_address);
+    tracing::info!("Listening on {bind_address}");
 
     axum::serve(listener, app)
         .await

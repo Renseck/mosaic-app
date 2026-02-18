@@ -21,7 +21,7 @@ services:
   grafana:
     image: grafana/grafana:latest
     depends_on:
-      - postgres: { condition: service_healthy }
+      postgres: { condition: service_healthy }
     environment:
       GF_DATABASE_TYPE: postgres
       GF_DATABASE_HOST: postgres:5432
@@ -35,6 +35,8 @@ services:
       GF_SERVER_ROOT_URL: "%(protocol)s://%(domain)s:%(http_port)s/proxy/grafana/"
     expose:
       - "3000"
+    ports:
+      - "3000:3000"
     # NOT exposed to host — only accessible via internal network
 
   nocodb:
@@ -45,6 +47,8 @@ services:
       NC_DB: "pg://postgres:5432?u=portal&p=${POSTGRES_PASSWORD:-secret}&d=nocodb"
     expose:
       - "8090"
+    ports:
+      - "8090:8090" # Exposed for local dev; remove in production
     # NOT exposed to host — only accessible via internal network
 
 volumes:
