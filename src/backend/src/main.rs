@@ -18,6 +18,7 @@ use tracing_subscriber::EnvFilter;
 pub struct AppState {
     pub pool: PgPool,
     pub config: AppConfig,
+    pub http_client: reqwest::Client,
 }
 
 /// Allows extractors (e.g. `AuthenticatedUser`) to pull the pool directly from state
@@ -56,9 +57,17 @@ async fn main() {
         .expect("Failed to run migrations");
     tracing::info!("Migrations applied");
 
+    let http_client = reqwest::Client::builder()
+        .build()
+        .expect("Failed to build HTTP client");
+
     // Clone before moving into state
     let bind_address = config.bind_address.clone();
-    let state = AppState { pool, config };
+    let state = AppState {
+         pool, 
+         config,
+        http_client,    
+    };
 
     // Build router
     let app = api::router(state);

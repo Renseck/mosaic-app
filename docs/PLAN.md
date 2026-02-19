@@ -41,7 +41,7 @@ The project has a complete file structure scaffolded (all files exist but are em
 
 ---
 
-## Phase 2: Auth
+## Phase 2: Auth [DONE]
 
 **Goal**: Users can register (first user becomes admin), log in, receive a session cookie, and access protected routes. The `AuthenticatedUser` and `RequireAdmin` extractors work.
 

@@ -7,6 +7,7 @@ pub fn router(state: AppState) -> Router {
     Router::new()
         .route("/api/health", axum::routing::get(health))
         .nest("/api/auth", auth_routes())
+        .merge(crate::proxy::router())
         .with_state(state)
 }
 
