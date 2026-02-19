@@ -7,6 +7,8 @@ mod orchestrator;
 mod proxy;
 mod spa;
 
+use std::net::SocketAddr;
+
 use axum::extract::FromRef;
 use config::AppConfig;
 use db::pool::create_pool;
@@ -70,7 +72,8 @@ async fn main() {
     };
 
     // Build router
-    let app = api::router(state);
+    let app = api::router(state)
+        .into_make_service_with_connect_info::<SocketAddr>();
 
     // Start server
     let listener = tokio::net::TcpListener::bind(&bind_address)

@@ -44,7 +44,12 @@ services:
     depends_on:
       postgres: { condition: service_healthy }
     environment:
-      NC_DB: "pg://postgres:5432?u=portal&p=${POSTGRES_PASSWORD:-secret}&d=nocodb"
+      NC_DB_TYPE: pg
+      NC_DB_HOST: postgres
+      NC_DB_PORT: 5432
+      NC_DB_USER: portal
+      NC_DB_PASSWORD: ${POSTGRES_PASSWORD:-secret}
+      NC_DB_NAME: nocodb
     expose:
       - "8090"
     ports:
