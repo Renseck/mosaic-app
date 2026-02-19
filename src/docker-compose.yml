@@ -51,9 +51,9 @@ services:
       NC_DB_PASSWORD: ${POSTGRES_PASSWORD:-secret}
       NC_DB_NAME: nocodb
     expose:
-      - "8090"
+      - "8080"
     ports:
-      - "8090:8090" # Exposed for local dev; remove in production
+      - "8090:8080" # Exposed for local dev; remove in production
     # NOT exposed to host — only accessible via internal network
 
 volumes:
