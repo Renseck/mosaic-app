@@ -74,7 +74,7 @@ The project has a complete file structure scaffolded (all files exist but are em
 
 ---
 
-## Phase 3: Reverse Proxy
+## Phase 3: Reverse Proxy [DONE]
 
 **Goal**: Authenticated users can access Grafana and NocoDB through the Axum proxy. The proxy strips the prefix path, forwards requests to the internal service, and injects service-level auth.
 
