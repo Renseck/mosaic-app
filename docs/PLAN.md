@@ -142,7 +142,7 @@ The project has a complete file structure scaffolded (all files exist but are em
 
 ---
 
-## Phase 5: Yew SPA Shell
+## Phase 5: Yew SPA Shell [DONE]
 
 **Goal**: The Yew frontend compiles to WASM, is served by Axum's SPA fallback, and renders a login page + authenticated app shell (sidebar + topbar + content area). Login works end-to-end through the browser.
 

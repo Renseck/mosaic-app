@@ -4,12 +4,34 @@ version = "0.1.0"
 edition = "2024"
 rust-version = "1.93.1"
 authors = ["Renseck <77611329+Renseck@users.noreply.github.com>"]
-description = "A new Rust project"
+description = "Personal data portal - Yew frontend"
 readme = "README.md"
 homepage = "https://github.com/Renseck/mosaic-app"
 repository = "https://github.com/Renseck/mosaic-app"
 license = "MIT"
-keywords = ["cli", "tool"]
-categories = ["command-line-utilities"]
 
 [dependencies]
+yew = { version = "0.22.0", features = ["csr"] }
+yew-router = "0.19.0"
+
+# HTTP client (WASM-compatible)
+gloo-net = { version = "0.6.0", features = ["http"] }
+
+# Browser APIs
+gloo-utils = "0.2.0"
+gloo-storage = "0.3.0"
+web-sys = { version = "0.3.85", features = ["Document", "HtmlDocument", "Window", "console"] }
+wasm-bindgen = "0.2.108"
+wasm-bindgen-futures = "0.4.58"
+js-sys = "0.3.85"
+
+# Serialization
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
+
+# Async
+futures = "0.3.32"
+
+# Error handling
+thiserror = "2.0.18"
+mime_guess = "2.0.5"

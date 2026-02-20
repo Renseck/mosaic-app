@@ -24,6 +24,7 @@ pub fn router(state: AppState) -> Router {
         .nest("/api/panels", panel_routes())
         .nest("/api/users", user_routes())
         .merge(crate::proxy::router())
+        .fallback(crate::spa::spa_handler)
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(|request: &Request<_>| {

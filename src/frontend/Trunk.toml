@@ -1,0 +1,12 @@
+[build]
+target = "index.html"
+dist = "dist"
+
+# Proxy /api/* and /proxy/* to the backend during trunk serve
+[[proxy]]
+rewrite = "/api"
+backend = "http://localhost:8080/api"
+
+[[proxy]]
+rewrite = "/proxy"
+backend = "http://localhost:8080/proxy"
