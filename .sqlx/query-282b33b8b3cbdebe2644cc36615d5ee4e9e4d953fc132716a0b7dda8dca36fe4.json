@@ -1,0 +1,75 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO portal.dashboards (owner_id, title, slug, icon ,sort_order, is_shared)\n            VALUES ($1, $2, $3, $4, $5, $6)\n            RETURNING id, owner_id, title, slug, icon, sort_order, is_shared, created_at, updated_at\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "owner_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "title",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "slug",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "icon",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "sort_order",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 6,
+        "name": "is_shared",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 7,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 8,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Int4",
+        "Bool"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "282b33b8b3cbdebe2644cc36615d5ee4e9e4d953fc132716a0b7dda8dca36fe4"
+}

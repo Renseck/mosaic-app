@@ -105,7 +105,7 @@ The project has a complete file structure scaffolded (all files exist but are em
 
 ---
 
-## Phase 4: Dashboard & Panel CRUD
+## Phase 4: Dashboard & Panel CRUD [DONE]
 
 **Goal**: Full REST API for dashboards and panels, including batch position updates. All routes are auth-protected. Repository pattern with Postgres implementations.
 

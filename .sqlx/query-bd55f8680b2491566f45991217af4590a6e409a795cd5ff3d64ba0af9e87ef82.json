@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT u.id AS user_id, u.username, u.role\n        FROM portal.sessions s\n        JOIN portal.users u ON s.user_id = u.id\n        WHERE s.token_hash = $1 AND s.expires_at > now()\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "username",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "role",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "bd55f8680b2491566f45991217af4590a6e409a795cd5ff3d64ba0af9e87ef82"
+}

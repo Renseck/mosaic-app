@@ -8,10 +8,16 @@ mod proxy;
 mod spa;
 
 use std::net::SocketAddr;
+use std::sync::Arc;
 
 use axum::extract::FromRef;
 use config::AppConfig;
 use db::pool::create_pool;
+use db::repos::{
+    dashboard_repo::{DashboardRepo, PgDashboardRepo},
+    panel_repo::{PanelRepo, PgPanelRepo},
+    user_repo::{PgUserRepo, UserRepo},
+};
 use sqlx::PgPool;
 use tracing_subscriber::EnvFilter;
 
@@ -21,6 +27,9 @@ pub struct AppState {
     pub pool: PgPool,
     pub config: AppConfig,
     pub http_client: reqwest::Client,
+    pub dashboards: Arc<dyn DashboardRepo>,
+    pub panels: Arc<dyn PanelRepo>,
+    pub users: Arc<dyn UserRepo>,
 }
 
 /// Allows extractors (e.g. `AuthenticatedUser`) to pull the pool directly from state
@@ -59,16 +68,23 @@ async fn main() {
         .expect("Failed to run migrations");
     tracing::info!("Migrations applied");
 
+    // Build state
     let http_client = reqwest::Client::builder()
         .build()
         .expect("Failed to build HTTP client");
 
-    // Clone before moving into state
+    let dashboards: Arc<dyn DashboardRepo> = Arc::new(PgDashboardRepo { pool: pool.clone() });
+    let panels: Arc<dyn PanelRepo> = Arc::new(PgPanelRepo { pool: pool.clone() });
+    let users: Arc<dyn UserRepo> = Arc::new(PgUserRepo { pool: pool.clone() });
+    
     let bind_address = config.bind_address.clone();
     let state = AppState {
-         pool, 
-         config,
-        http_client,    
+        pool, 
+        config,
+        http_client,
+        dashboards,
+        panels,
+        users,   
     };
 
     // Build router

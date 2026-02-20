@@ -1,0 +1,96 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO portal.panels\n                (dashboard_id, title, panel_type, source_url, config, grid_x, grid_y, grid_w, grid_h)\n            VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9)\n            RETURNING id, dashboard_id, title, panel_type, source_url,\n                      config as \"config!: JsonValue\",\n                      grid_x, grid_y, grid_w, grid_h, created_at, updated_at\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "dashboard_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "title",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "panel_type",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "source_url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "config!: JsonValue",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 6,
+        "name": "grid_x",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 7,
+        "name": "grid_y",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 8,
+        "name": "grid_w",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
+        "name": "grid_h",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 10,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 11,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Text",
+        "Jsonb",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "8d111b46c7251ff6915a2d2ee2e03b4eac26b5234c8524e909ba6b5761906f40"
+}

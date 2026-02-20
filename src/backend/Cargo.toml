@@ -18,14 +18,7 @@ tower-http = { version = "0.6.8", features = ["cors", "fs", "trace"] }
 # =============================================================================================== #
 
 # Database
-sqlx = { version = "0.8.6", features = [
-    "chrono", 
-    "migrate", 
-    "postgres", 
-    "runtime-tokio", 
-    "tls-rustls", 
-    "uuid"
-] }
+sqlx = { version = "0.8.6", features = ["chrono", "json", "migrate", "postgres", "runtime-tokio", "tls-rustls", "uuid"] }
 
 # Serialization
 serde = { version = "1.0.228", features = ["derive"] }
@@ -53,3 +46,6 @@ hex = "0.4.3"
 # Proxy
 bytes = "1.11.1"
 reqwest = { version = "0.13.2", features = ["json", "stream"] }
+
+# CRUD
+async-trait = "0.1.89"
