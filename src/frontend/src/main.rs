@@ -4,6 +4,7 @@ mod components;
 mod context;
 mod hooks;
 mod models;
+mod pages;
 mod router;
 
 fn main() {

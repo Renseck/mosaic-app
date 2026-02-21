@@ -72,60 +72,86 @@ pub fn login_page() -> Html {
     };
 
     html! {
-        <div class="min-h-screen flex items-center justify-center bg-gray-50">
-            <div class="w-full max-w-sm space-y-6">
-                <div class="text-center">
-                    <h1 class="text-3xl font-bold text-gray-900">{"Mosaic"}</h1>
-                    <p class="mt-1 text-sm text-gray-500">{"Sign in to your portal"}</p>
-                </div>
+        <div class="min-h-screen grid grid-cols-1 lg:grid-cols-5">
 
-                <form onsubmit={on_submit} class="bg-white shadow rounded-lg px-8 py-8 space-y-4">
+            // ── Left: brand panel ────────────────────────────────────────
+            <div class="hidden lg:flex lg:col-span-2 flex-col justify-between bg-slate-900 px-12 py-16">
+                <div>
+                    <span class="text-2xl font-bold tracking-tight text-white">{"Mosaic"}</span>
+                </div>
+                <div class="space-y-4">
+                    <div class="w-8 h-1 bg-amber-500 rounded" />
+                    <p class="text-slate-300 text-sm leading-relaxed max-w-xs">
+                        {"Your personal data portal. Unified metrics, forms, and dashboards — one login, one place."}
+                    </p>
+                </div>
+                <p class="text-slate-600 text-xs">{"Self-hosted · Open source"}</p>
+            </div>
+
+            // ── Right: form ──────────────────────────────────────────────
+            <div class="lg:col-span-3 flex flex-col justify-center px-8 py-16 sm:px-16 bg-stone-50">
+                <div class="w-full max-w-sm mx-auto">
+
+                    // Mobile-only brand
+                    <div class="lg:hidden mb-8">
+                        <span class="text-xl font-bold text-slate-900">{"Mosaic"}</span>
+                    </div>
+
+                    <h1 class="text-2xl font-bold text-stone-900">{"Sign in"}</h1>
+                    <p class="mt-1 text-sm text-stone-500 mb-8">{"Enter your credentials to continue"}</p>
+
                     if let Some(err) = (*error).clone() {
-                        <div class="rounded bg-red-50 border border-red-200 px-4 py-2 text-sm text-red-700">
+                        <div class="mb-4 rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
                             { err }
                         </div>
                     }
 
-                    <div class="space-y-1">
-                        <label class="block text-sm font-medium text-gray-700" for="username">
-                            {"Username"}
-                        </label>
-                        <input
-                            id="username"
-                            type="text"
-                            autocomplete="username"
-                            required=true
-                            disabled={*loading}
-                            value={(*username).clone()}
-                            oninput={on_username}
-                            class="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
-                        />
-                    </div>
+                    <form onsubmit={on_submit} class="space-y-4">
+                        <div class="space-y-1">
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-stone-500"
+                                   for="username">
+                                {"Username"}
+                            </label>
+                            <input
+                                id="username" type="text" autocomplete="username" required=true
+                                disabled={*loading}
+                                value={(*username).clone()}
+                                oninput={on_username}
+                                class="w-full rounded-md border border-stone-300 bg-white px-3 py-2.5 text-sm
+                                       text-stone-900 placeholder-stone-400
+                                       focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent
+                                       disabled:opacity-50 transition"
+                            />
+                        </div>
 
-                    <div class="space-y-1">
-                        <label class="block text-sm font-medium text-gray-700" for="password">
-                            {"Password"}
-                        </label>
-                        <input
-                            id="password"
-                            type="password"
-                            autocomplete="current-password"
-                            required=true
-                            disabled={*loading}
-                            value={(*password).clone()}
-                            oninput={on_password}
-                            class="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
-                        />
-                    </div>
+                        <div class="space-y-1">
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-stone-500"
+                                   for="password">
+                                {"Password"}
+                            </label>
+                            <input
+                                id="password" type="password" autocomplete="current-password" required=true
+                                disabled={*loading}
+                                value={(*password).clone()}
+                                oninput={on_password}
+                                class="w-full rounded-md border border-stone-300 bg-white px-3 py-2.5 text-sm
+                                       text-stone-900 placeholder-stone-400
+                                       focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent
+                                       disabled:opacity-50 transition"
+                            />
+                        </div>
 
-                    <button
-                        type="submit"
-                        disabled={*loading}
-                        class="w-full rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-                    >
-                        if *loading { {"Signing in…"} } else { {"Sign in"} }
-                    </button>
-                </form>
+                        <button
+                            type="submit"
+                            disabled={*loading}
+                            class="mt-2 w-full rounded-md bg-amber-500 px-4 py-2.5 text-sm font-semibold
+                                   text-slate-900 hover:bg-amber-400 active:bg-amber-600
+                                   disabled:opacity-50 transition-colors"
+                        >
+                            if *loading { {"Signing in…"} } else { {"Sign in"} }
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
     }

@@ -20,7 +20,7 @@ gloo-net = { version = "0.6.0", features = ["http"] }
 # Browser APIs
 gloo-utils = "0.2.0"
 gloo-storage = "0.3.0"
-web-sys = { version = "0.3.85", features = ["Document", "HtmlDocument", "Window", "console"] }
+web-sys = { version = "0.3.85", features = ["Document", "Element", "HtmlDocument", "HtmlElement", "HtmlInputElement", "HtmlTextAreaElement", "Window", "console"] }
 wasm-bindgen = "0.2.108"
 wasm-bindgen-futures = "0.4.58"
 js-sys = "0.3.85"

@@ -193,7 +193,7 @@ The project has a complete file structure scaffolded (all files exist but are em
 
 ---
 
-## Phase 6: Dashboard Grid
+## Phase 6: Dashboard Grid [DONE]
 
 **Goal**: Users can view dashboards with a drag-and-drop grid of panels. Panels render Grafana charts and NocoDB views in iframes. Grid changes persist to the backend.
 

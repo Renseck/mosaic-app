@@ -4,31 +4,16 @@ use yew_router::prelude::*;
 use crate::components::auth::LoginPage;
 use crate::components::layout::Shell;
 use crate::context::auth_context::{AuthProvider, AuthContext};
+use crate::pages::{
+    dashboard_list::DashboardListPage,
+    dashboard_view::DashboardViewPage,
+};
 use crate::router::Route;
 
 /* ============================================================================================== */
 /*                                   Placeholder page components                                  */
 /* ============================================================================================== */
 
-#[function_component(DashboardListPage)]
-fn dashboard_list_page() -> Html {
-    html! {
-        <div>
-            <h2 class="text-xl font-semibold text-gray-800">{"Dashboards"}</h2>
-            <p class="mt-2 text-sm text-gray-500">{"No dashboards yet."}</p>
-        </div>
-    }
-}
-
-#[function_component(DashboardViewPage)]
-fn dashboard_view_page() -> Html {
-    // TODO: In Phase 6 this will receive the slug prop from the router.
-    html! {
-        <div>{"Dashboard view - coming in Phase 6"}</div>
-    }
-}
-
-/* ============================================================================================== */
 #[function_component(TemplateListPage)]
 fn template_list_page() -> Html {
     html! {
@@ -66,8 +51,11 @@ fn app_content() -> Html {
     // While the initial session is in flight, show a loading screen.
     if auth.loading {
         return html! {
-            <div class="min-h-screen flex items-center justify-center">
-                <p class="text-gray-400">{"Loading..."}</p>
+            <div class="min-h-screen flex items-center justify-center bg-stone-50">
+                <div class="flex flex-col items-center gap-3">
+                    <div class="w-2 h-2 rounded-sm bg-amber-500 animate-bounce" />
+                    <p class="text-stone-400 text-sm">{"Loading…"}</p>
+                </div>
             </div>
         };
     }
@@ -75,9 +63,7 @@ fn app_content() -> Html {
     // Unauthenticated: only the login page is accessible.
     if auth.user.is_none() {
         return html! {
-            <Switch<Route> render={|route| match route {
-                _ => html! { <LoginPage /> },
-            }} />
+            <Switch<Route> render={|_| html! { <LoginPage /> }} />
         };
     }
 
@@ -85,14 +71,18 @@ fn app_content() -> Html {
     html! {
         <Shell>
             <Switch<Route> render={|route| match route {
-                Route::Login => html! { <Redirect<Route> to={Route::DashboardList} /> },
-                Route::Home => html! { <Redirect<Route> to={Route::DashboardList} /> },
-                Route::DashboardList => html! { <DashboardListPage /> },
-                Route::DashboardView { .. } => html! { <DashboardViewPage /> },
-                Route::TemplateList => html! { <TemplateListPage /> },
-                Route::TemplateNew => html! { <TemplateListPage /> },
-                Route::Settings => html! { <SettingsPage /> },
-                Route::NotFound => html! { <NotFoundPage /> },
+                Route::Login | Route::Home =>
+                    html! { <Redirect<Route> to={Route::DashboardList} /> },
+                Route::DashboardList =>
+                    html! { <DashboardListPage /> },
+                Route::DashboardView { slug } =>
+                    html! { <DashboardViewPage slug={slug} /> },
+                Route::TemplateList | Route::TemplateNew =>
+                    html! { <TemplateListPage /> },
+                Route::Settings =>
+                    html! { <SettingsPage /> },
+                Route::NotFound =>
+                    html! { <NotFoundPage /> },
             }} />
         </Shell>
     }

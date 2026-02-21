@@ -76,6 +76,16 @@ pub async fn put_json<B: Serialize, T: DeserializeOwned>(
 }
 
 /* ============================================================================================== */
+/// For endpoints that return 204 No Content.
+pub async fn put_json_empty<B: Serialize>(path: &str, body: &B) -> Result<(), ApiError> {
+    check(
+        Request::put(path).json(body)
+            .map_err(|e| ApiError::Network(e.to_string()))?.send().await?,
+    ).await?;
+    Ok(())
+}
+
+/* ============================================================================================== */
 pub async fn delete(path: &str) -> Result<(), ApiError> {
     check(Request::delete(path).send().await?).await?;
     Ok(())

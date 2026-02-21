@@ -8,15 +8,28 @@
     <!-- Tailwind CSS via CDN (development convenience; replace with built CSS in production) -->
     <script src="https://cdn.tailwindcss.com"></script>
 
+    <!-- GridStack v10 -->
+    <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@10/dist/gridstack.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/gridstack@10/dist/gridstack-all.js"></script>
+
     <style>
         /* Ensure the app fills the viewport */
         html, body, #app {
             height: 100%;
             margin: 0;
         }
+
+         /* GridStack integration: let GridStack control height; Yew controls content */
+        .grid-stack-item-content {
+            inset: 0;
+            overflow: hidden;
+        }
+        /* Suppress GridStack's default resize handle color */
+        .ui-resizable-handle { opacity: 0.3; }
+        .ui-resizable-handle:hover { opacity: 0.8; }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-900">
+<body class="bg-stone-50 text-gray-900">
     <div id="app"></div>
 </body>
 </html>
