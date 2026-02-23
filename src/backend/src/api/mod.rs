@@ -23,6 +23,7 @@ pub fn router(state: AppState) -> Router {
         .nest("/api/dashboards", dashboard_routes())
         .nest("/api/panels", panel_routes())
         .nest("/api/users", user_routes())
+        .nest("/api/templates", template_routes())
         .merge(crate::proxy::router())
         .fallback(crate::spa::spa_handler)
         .layer(
@@ -107,6 +108,14 @@ fn user_routes() -> Router<AppState> {
     Router::new()
         .route("/", get(list_users))
         .route("/{id}/role", put(update_user_role))
+}
+
+/* ============================================================================================== */
+fn template_routes() -> Router<AppState> {
+    use crate::api::templates::{create_template, delete_template, get_template, list_templates};
+    Router::new()
+        .route("/", get(list_templates).post(create_template))
+        .route("/{id}", get(get_template).delete(delete_template))
 }
 
 /* ============================================================================================== */

@@ -52,6 +52,7 @@ services:
       NC_DB_USER: portal
       NC_DB_PASSWORD: ${POSTGRES_PASSWORD:-secret}
       NC_DB_NAME: nocodb
+      NC_DB: "pg://postgres:5432?u=portal&p=${POSTGRES_PASSWORD:-secret}&d=nocodb"
     expose:
       - "8080"
     ports:

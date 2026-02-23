@@ -21,15 +21,21 @@ use db::repos::{
 use sqlx::PgPool;
 use tracing_subscriber::EnvFilter;
 
+use crate::db::repos::{PgTemplateRepo, TemplateRepo};
+use crate::orchestrator::nocodb_client::NocoPgConnection;
+use crate::orchestrator::{GrafanaClient, NocodbClient, Orchestrator};
+
 /// Shared application state injected into all handlers via Axum's `State` extractors.
 #[derive(Clone)]
 pub struct AppState {
-    pub pool: PgPool,
-    pub config: AppConfig,
-    pub http_client: reqwest::Client,
-    pub dashboards: Arc<dyn DashboardRepo>,
-    pub panels: Arc<dyn PanelRepo>,
-    pub users: Arc<dyn UserRepo>,
+    pub pool:           PgPool,
+    pub config:         AppConfig,
+    pub http_client:    reqwest::Client,
+    pub dashboards:     Arc<dyn DashboardRepo>,
+    pub panels:         Arc<dyn PanelRepo>,
+    pub users:          Arc<dyn UserRepo>,
+    pub templates:      Arc<dyn TemplateRepo>,
+    pub orchestrator:   Arc<Orchestrator>,
 }
 
 /// Allows extractors (e.g. `AuthenticatedUser`) to pull the pool directly from state
@@ -73,18 +79,36 @@ async fn main() {
         .build()
         .expect("Failed to build HTTP client");
 
-    let dashboards: Arc<dyn DashboardRepo> = Arc::new(PgDashboardRepo { pool: pool.clone() });
-    let panels: Arc<dyn PanelRepo> = Arc::new(PgPanelRepo { pool: pool.clone() });
-    let users: Arc<dyn UserRepo> = Arc::new(PgUserRepo { pool: pool.clone() });
-    
+    let nocodb = NocodbClient::new(
+        http_client.clone(),
+        config.nocodb_internal_url.clone(),
+        config.nocodb_api_token.clone(),
+        NocoPgConnection {
+            host:     config.nocodb_pg_host.clone(),
+            port:     config.nocodb_pg_port,
+            user:     config.nocodb_pg_user.clone(),
+            password: config.nocodb_pg_password.clone(),
+            database: config.nocodb_pg_database.clone(),
+        },
+    );
+    let grafana = GrafanaClient::new(
+        http_client.clone(),
+        config.grafana_internal_url.clone(),
+        config.grafana_service_account_token.clone(),
+        config.grafana_datasource_uid.clone(),
+    );
+    let orchestrator = Arc::new(Orchestrator { nocodb, grafana, pool: pool.clone() });
+
     let bind_address = config.bind_address.clone();
     let state = AppState {
-        pool, 
+        pool:         pool.clone(),
         config,
         http_client,
-        dashboards,
-        panels,
-        users,   
+        dashboards:   Arc::new(PgDashboardRepo { pool: pool.clone() }),
+        panels:       Arc::new(PgPanelRepo     { pool: pool.clone() }),
+        users:        Arc::new(PgUserRepo       { pool: pool.clone() }),
+        templates:    Arc::new(PgTemplateRepo   { pool: pool.clone() }),
+        orchestrator,
     };
 
     // Build router

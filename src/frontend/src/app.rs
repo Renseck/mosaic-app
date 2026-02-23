@@ -3,6 +3,10 @@ use yew_router::prelude::*;
 
 use crate::components::auth::LoginPage;
 use crate::components::layout::Shell;
+use crate::components::templates::{
+    template_list::TemplateList,
+    template_wizard::TemplateWizard,
+};
 use crate::context::auth_context::{AuthProvider, AuthContext};
 use crate::pages::{
     dashboard_list::DashboardListPage,
@@ -14,14 +18,6 @@ use crate::router::Route;
 /*                                   Placeholder page components                                  */
 /* ============================================================================================== */
 
-#[function_component(TemplateListPage)]
-fn template_list_page() -> Html {
-    html! {
-        <div>{"Templates - coming in Phase 7"}</div>
-    }
-}
-
-/* ============================================================================================== */
 #[function_component(SettingsPage)]
 fn settings_page() -> Html {
     html! {
@@ -77,8 +73,10 @@ fn app_content() -> Html {
                     html! { <DashboardListPage /> },
                 Route::DashboardView { slug } =>
                     html! { <DashboardViewPage slug={slug} /> },
-                Route::TemplateList | Route::TemplateNew =>
-                    html! { <TemplateListPage /> },
+                Route::TemplateList =>
+                    html! { <TemplateList /> },
+                Route::TemplateNew =>
+                    html! { <TemplateWizard /> },
                 Route::Settings =>
                     html! { <SettingsPage /> },
                 Route::NotFound =>
