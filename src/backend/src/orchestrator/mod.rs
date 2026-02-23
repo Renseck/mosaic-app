@@ -14,7 +14,7 @@ use crate::db::repos::{
 use crate::error::AppError;
 use provisioner::{CreateTemplate, Pipeline, Unstarted};
 pub use provisioner::CreateTemplate as CreateTemplateInput;
-pub use nocodb_client::{NocodbClient, NocoPgConnection};
+pub use nocodb_client::{NocodbClient};
 pub use grafana_client::GrafanaClient;
 use uuid::Uuid;
 

@@ -237,7 +237,7 @@ The project has a complete file structure scaffolded (all files exist but are em
 
 ---
 
-## Phase 7: Orchestrator
+## Phase 7: Orchestrator [DONE]
 
 **Goal**: The provisioner pipeline creates NocoDB tables + forms and Grafana dashboards from a template definition. The template wizard in the frontend drives this end-to-end.
 

@@ -30,12 +30,14 @@ pub struct CreateTemplate {
 pub struct Unstarted;
 
 pub struct TableReady {
+    pub base_id:    String,  // NocoDB base ID
     pub table_id:   String,  // NocoDB table ID
     pub table_name: String,  // Actual Postgres table name
 }
 
 
 pub struct FormReady {
+    pub base_id:         String,
     pub table_id:        String,
     pub table_name:      String,
     pub form_view_id:    String,
@@ -72,7 +74,7 @@ impl Pipeline<Unstarted> {
         self,
         nocodb: &NocodbClient,
     ) -> Result<Pipeline<TableReady>, (AppError, Pipeline<Unstarted>)> {
-        let base_id = match nocodb.ensure_mosaic_base().await {
+        let base_id = match nocodb.get_first_base_id().await {
             Ok(id) => id,
             Err(e) => return Err((e, self)),
         };
@@ -83,7 +85,11 @@ impl Pipeline<Unstarted> {
         };
 
         Ok(Pipeline {
-            state: TableReady { table_id: created.id, table_name: created.table_name },
+            state: TableReady { 
+                base_id,
+                table_id: created.id, 
+                table_name: created.table_name 
+            },
             input: self.input,
             user_id: self.user_id,
         })
@@ -101,6 +107,7 @@ impl Pipeline<TableReady> {
         match nocodb.create_shared_form(&self.state.table_id, &form_title).await {
             Ok((view_id, uuid)) => Ok(Pipeline {
                 state: FormReady { 
+                    base_id:            self.state.base_id,
                     table_id:           self.state.table_id, 
                     table_name:         self.state.table_name, 
                     form_view_id:       view_id, 
@@ -123,6 +130,7 @@ impl Pipeline<FormReady> {
     ) -> Result<Pipeline<GrafanaReady>, (AppError, Pipeline<FormReady>)> {
         match grafana.create_dashboard(
             &self.input.name,
+            &self.state.base_id,
             &self.state.table_name,
             &self.input.fields,
         ).await {

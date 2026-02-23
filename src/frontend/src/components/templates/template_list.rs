@@ -18,6 +18,9 @@ pub fn template_list() -> Html {
     let is_admin = auth.user.as_ref().map(|u| u.role == Role::Admin).unwrap_or(false);
     let (state, reload) = use_api(|| templates::list_templates());
 
+    // Holds the share UUID of the form to show in the modal, or None if closed.
+    let form_modal: UseStateHandle<Option<String>> = use_state(|| None);
+
     html! {
         <div class="max-w-5xl mx-auto">
 
@@ -61,6 +64,7 @@ pub fn template_list() -> Html {
                         { for templates_list.iter().map(|t| {
                             let reload   = reload.clone();
                             let t_id     = t.id.clone();
+                            let form_modal = form_modal.clone();
                             let on_delete = Callback::from(move |()| {
                                 let reload = reload.clone();
                                 let id     = t_id.clone();
@@ -69,16 +73,34 @@ pub fn template_list() -> Html {
                                     reload.emit(());
                                 });
                             });
+                            let on_open_form = {
+                                let form_modal = form_modal.clone();
+                                Callback::from(move |uuid: String| {
+                                    form_modal.set(Some(uuid));
+                                })
+                            };
                             html! {
                                 <TemplateCard
                                     template={t.clone()}
                                     is_admin={is_admin}
                                     on_delete={on_delete}
+                                    on_open_form={on_open_form}
                                 />
                             }
                         })}
                     </div>
                 }
+            }
+
+            /* ================================== Form modal ==================================== */
+            if let Some(ref uuid) = *form_modal {
+                <FormModal
+                    share_uuid={uuid.clone()}
+                    on_close={Callback::from({
+                        let form_modal = form_modal.clone();
+                        move |_: ()| form_modal.set(None)
+                    })}
+                />
             }
         </div>
     }
@@ -90,9 +112,10 @@ pub fn template_list() -> Html {
 
 #[derive(Properties, PartialEq)]
 struct TemplateCardProps {
-    template:  DatasetTemplate,
-    is_admin:  bool,
-    on_delete: Callback<()>,
+    template:     DatasetTemplate,
+    is_admin:     bool,
+    on_delete:    Callback<()>,
+    on_open_form: Callback<String>,
 }
 
 #[function_component(TemplateCard)]
@@ -137,13 +160,17 @@ fn template_card(props: &TemplateCardProps) -> Html {
 
                     /* ============================= External links ============================= */
                     <div class="flex flex-wrap gap-4 mt-2">
-                        if let Some(ref form_id) = t.nocodb_form_id {
-                            <a  href={format!("/proxy/nocodb/nc/form/{form_id}")}
-                                target="_blank" rel="noopener noreferrer"
-                                class="text-xs text-blue-500 hover:underline"
+                        if let Some(ref form_uuid) = t.nocodb_form_id {
+                            <button
+                                onclick={Callback::from({
+                                    let on_open = props.on_open_form.clone();
+                                    let uuid = form_uuid.clone();
+                                    move |_: MouseEvent| on_open.emit(uuid.clone())
+                                })}
+                                class="text-xs text-blue-500 hover:underline cursor-pointer"
                             >
                                 {"📋 Entry Form"}
-                            </a>
+                            </button>
                         }
                         if let Some(ref uid) = t.grafana_dashboard_uid {
                             <a  href={format!("/proxy/grafana/d/{uid}")}
@@ -195,6 +222,57 @@ fn template_card(props: &TemplateCardProps) -> Html {
                         }
                     </div>
                 }
+            </div>
+        </div>
+    }
+}
+
+/* ============================================================================================== */
+/*                                           Form modal                                           */
+/* ============================================================================================== */
+
+#[derive(Properties, PartialEq)]
+struct FormModalProps {
+    share_uuid: String,
+    on_close:   Callback<()>,
+}
+
+#[function_component(FormModal)]
+fn form_modal(props: &FormModalProps) -> Html {
+    let src = format!("/proxy/nocodb/dashboard/#/nc/form/{}", props.share_uuid);
+
+    html! {
+        // Backdrop
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+             onclick={Callback::from({
+                 let on_close = props.on_close.clone();
+                 move |_: MouseEvent| on_close.emit(())
+             })}
+        >
+            // Modal container — stop click propagation so clicking inside doesn't close
+            <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4"
+                 style="height: 80vh;"
+                 onclick={Callback::from(|e: MouseEvent| e.stop_propagation())}
+            >
+                // Close button
+                <button
+                    onclick={Callback::from({
+                        let on_close = props.on_close.clone();
+                        move |_: MouseEvent| on_close.emit(())
+                    })}
+                    class="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center
+                           rounded-full bg-stone-100 hover:bg-stone-200 text-stone-500
+                           hover:text-stone-700 transition-colors text-sm"
+                >
+                    {"✕"}
+                </button>
+
+                // Iframe
+                <iframe
+                    {src}
+                    class="w-full h-full rounded-xl border-0"
+                    title="Data Entry Form"
+                />
             </div>
         </div>
     }

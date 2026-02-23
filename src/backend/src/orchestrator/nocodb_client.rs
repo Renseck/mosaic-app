@@ -6,20 +6,6 @@ use crate::db::repos::template_repo::FieldDefinition;
 use crate::error::AppError;
 
 /* ============================================================================================== */
-/*                                       Postgres connection                                      */
-/* ============================================================================================== */
-
-/// Connection details NocoDB uses to reach the external Postgres data source.
-/// These are Docker-internal coordinates (hostname = service name).
-pub struct NocoPgConnection {
-    pub host:     String,
-    pub port:     u16,
-    pub user:     String,
-    pub password: String,
-    pub database: String,
-}
-
-/* ============================================================================================== */
 /*                                          NocoDB Client                                         */
 /* ============================================================================================== */
 
@@ -27,7 +13,6 @@ pub struct NocodbClient {
     client:     Client,
     base_url:   String,
     token:      String,
-    pg_conn:    NocoPgConnection,
 }
 
 #[derive(Deserialize)]
@@ -37,8 +22,9 @@ pub struct CreatedTable {
 }
 
 #[derive(Deserialize)]
-struct CreatedView { 
-    id: String 
+struct CreatedFormView { 
+    id:     String,
+    title:  String,
 }
 
 /* ============================================================================================== */
@@ -47,9 +33,8 @@ impl NocodbClient {
         client: Client,
         base_url: String,
         token: String,
-        pg_conn: NocoPgConnection,
     ) -> Self {
-        Self { client, base_url, token, pg_conn }
+        Self { client, base_url, token }
     }
 
     fn url (&self, path: &str) -> String {
@@ -62,17 +47,16 @@ impl NocodbClient {
 
     /* ========================================== Bases ========================================= */
 
-    /// Find or create an external-Postgres-backed base named "Mosaic".
-    /// This base is where all user dataset tables live. The method is
-    /// idempotent: on subsequent calls it returns the existing base ID.
-    pub async fn ensure_mosaic_base(&self) -> Result<String, AppError> {
+    /// Discover the first NocoDB base. NocoDB stores both meta and data in the
+    /// same Postgres database (configured via `NC_DB`), so the default base
+    /// already creates real Postgres tables — no external source needed.
+    pub async fn get_first_base_id(&self) -> Result<String, AppError> {
         #[derive(Deserialize)]
-        struct Base { id: String, title: String }
+        struct Base { id: String }
         #[derive(Deserialize)]
-        struct ListResponse { list: Vec<Base> }
+        struct Response { list: Vec<Base> }
 
-        // 1. Check if the "Mosaic" base already exists
-        let resp: ListResponse = self.client
+        let resp: Response = self.client
             .get(self.url("/api/v2/meta/bases"))
             .header(self.auth().0, self.auth().1)
             .send().await
@@ -82,49 +66,13 @@ impl NocodbClient {
             .json().await
             .map_err(|e| AppError::Internal(e.into()))?;
 
-        if let Some(base) = resp.list.into_iter().find(|b| b.title == "Mosaic") {
-            tracing::info!("Found existing Mosaic base: {}", base.id);
-            return Ok(base.id);
-        }
-
-        // 2. Create a new base with an external Postgres source
-        #[derive(Deserialize)]
-        struct CreatedBase { id: String }
-
-        let conn = &self.pg_conn;
-        let created: CreatedBase = self.client
-            .post(self.url("/api/v2/meta/bases"))
-            .header(self.auth().0, self.auth().1)
-            .json(&json!({
-                "title": "Mosaic",
-                "sources": [{
-                    "type":   "pg",
-                    "config": {
-                        "client":     "pg",
-                        "connection": {
-                            "host":     conn.host,
-                            "port":     conn.port,
-                            "user":     conn.user,
-                            "password": conn.password,
-                            "database": conn.database,
-                        },
-                    },
-                }],
-            }))
-            .send().await
-            .map_err(|e| AppError::Internal(e.into()))?
-            .error_for_status()
-            .map_err(|e| AppError::Internal(
-                anyhow::anyhow!("NocoDB create base failed: {e}")
-            ))?
-            .json().await
-            .map_err(|e| AppError::Internal(e.into()))?;
-
-        tracing::info!("Created Mosaic base: {}", created.id);
-        Ok(created.id)
+        resp.list.into_iter().next()
+            .map(|b| b.id)
+            .ok_or_else(|| AppError::Internal(
+                anyhow::anyhow!("NocoDB has no bases — initialize NocoDB first")
+            ))
     }
 
-    
     /* ========================================================================================== */
     /// Create a table with all columns in a single request, as required by NocoDB v2 API.
     pub async fn create_table(
@@ -167,7 +115,51 @@ impl NocodbClient {
                 anyhow::anyhow!("NocoDB create_table response parse failed: {e}")
             ))?;
 
+        // Wait for the table to become queryable in NocoDB's meta catalog.
+        // External Postgres sources may not be immediately consistent.
+        self.wait_for_table(&created.id).await?;
+
         Ok(created)
+    }
+
+    /* ========================================================================================== */
+    /// Poll NocoDB until the table is findable, or fail after timeout.
+    /// This guards against race conditions with external data sources.
+    async fn wait_for_table(&self, table_id: &str) -> Result<(), AppError> {
+        let max_attempts = 10;
+        let delay = std::time::Duration::from_millis(500);
+
+        for attempt in 1..=max_attempts {
+            let resp = self.client
+                .get(self.url(&format!("/api/v2/meta/tables/{table_id}/views")))
+                .header(self.auth().0, self.auth().1)
+                .send().await
+                .map_err(|e| AppError::Internal(e.into()))?;
+
+            if resp.status().is_success() {
+                tracing::info!(
+                    "Table {} ready after {} attempt(s)",
+                    table_id,
+                    attempt
+                );
+                return Ok(());
+            }
+
+            tracing::warn!(
+                "Table {} not yet ready (attempt {}/{}), retrying…",
+                table_id,
+                attempt,
+                max_attempts
+            );
+            tokio::time::sleep(delay).await;
+        }
+
+        Err(AppError::Internal(anyhow::anyhow!(
+            "Table {} not queryable after {} attempts — NocoDB may not have \
+             registered it in its meta catalog",
+            table_id,
+            max_attempts
+        )))
     }
 
     /* ========================================================================================== */
@@ -222,22 +214,31 @@ impl NocodbClient {
         title: &str,
     ) -> Result<(String, String), AppError> {
         // 1. Create form view (type = "form")
-        let view: CreatedView = self.client
-            .post(self.url(&format!("/api/v2/meta/tables/{table_id}/views")))
+        //    POST /api/v2/meta/tables/{tableId}/forms
+        //    Body: { "title": "...", "type": 1 }
+        let view: CreatedFormView = self.client
+            .post(self.url(&format!("/api/v2/meta/tables/{table_id}/forms")))
             .header(self.auth().0, self.auth().1)
-            .json(&json!({ "title": title, "type": "form" }))
+            .json(&json!({
+                "title": title,
+                "type":  1
+            }))
             .send().await
             .map_err(|e| AppError::Internal(e.into()))?
             .error_for_status()
             .map_err(|e| AppError::Internal(
-                anyhow::anyhow!("NocoDB create_view failed: {e}")
+                anyhow::anyhow!("NocoDB create_form failed: {e}")
             ))?
             .json().await
             .map_err(|e| AppError::Internal(e.into()))?;
 
+        tracing::info!("Created NocoDB form view '{}' (id: {})", title, view.id);
+
         // 2. Enable sharing → get public UUID
+        //    POST /api/v2/meta/views/{viewId}/share
         #[derive(Deserialize)]
         struct ShareResponse { uuid: String }
+
         let share: ShareResponse = self.client
             .post(self.url(&format!("/api/v2/meta/views/{}/share", view.id)))
             .header(self.auth().0, self.auth().1)
@@ -250,6 +251,8 @@ impl NocodbClient {
             ))?
             .json().await
             .map_err(|e| AppError::Internal(e.into()))?;
+
+        tracing::info!("Shared form view {} → uuid {}", view.id, share.uuid);
 
         Ok((view.id, share.uuid))
     }

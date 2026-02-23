@@ -42,10 +42,11 @@ impl GrafanaClient {
     pub async fn create_dashboard(
         &self,
         title: &str,
+        base_id: &str,
         table_name: &str, // actual Postgres table name in NocoDB DB
         fields: &[FieldDefinition],
     ) -> Result<CreatedDashboard, AppError> {
-        let panels = self.build_panels(table_name, fields);
+        let panels = self.build_panels(base_id, table_name, fields);
         let body = json!({
             "dashboard": {
                 "uid":           serde_json::Value::Null,
@@ -89,7 +90,14 @@ impl GrafanaClient {
 
     /* ====================================== Panel builder ===================================== */
 
-    fn build_panels(&self, table_name: &str, fields: &[FieldDefinition]) -> Value {
+    fn build_panels(
+        &self,
+        base_id: &str,
+        table_name: &str, 
+        fields: &[FieldDefinition]
+    ) -> Value {
+        let qualified_table = format!(r#"{base_id}."{table_name}""#);
+
         let has_measured_at = fields.iter().any(|f| f.name == "measured_at");
         let time_expr = if has_measured_at {
             "COALESCE(measured_at, created_at)"
@@ -109,10 +117,13 @@ impl GrafanaClient {
             };
 
             let sql = format!(
-                "SELECT\n  {time} AS time,\n  {col}\nFROM {tbl}\nWHERE $__timeFilter({time})\nORDER BY time",
+                "SELECT\n  {time} AS time,\n  \"{col}\"\n\
+                 FROM {tbl}\n\
+                 WHERE $__timeFilter({time})\n\
+                 ORDER BY time",
                 time = time_expr,
-                col = field.name,
-                tbl = table_name
+                col  = field.name,
+                tbl  = qualified_table,
             );
 
             json!({

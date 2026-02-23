@@ -22,7 +22,6 @@ use sqlx::PgPool;
 use tracing_subscriber::EnvFilter;
 
 use crate::db::repos::{PgTemplateRepo, TemplateRepo};
-use crate::orchestrator::nocodb_client::NocoPgConnection;
 use crate::orchestrator::{GrafanaClient, NocodbClient, Orchestrator};
 
 /// Shared application state injected into all handlers via Axum's `State` extractors.
@@ -83,13 +82,6 @@ async fn main() {
         http_client.clone(),
         config.nocodb_internal_url.clone(),
         config.nocodb_api_token.clone(),
-        NocoPgConnection {
-            host:     config.nocodb_pg_host.clone(),
-            port:     config.nocodb_pg_port,
-            user:     config.nocodb_pg_user.clone(),
-            password: config.nocodb_pg_password.clone(),
-            database: config.nocodb_pg_database.clone(),
-        },
     );
     let grafana = GrafanaClient::new(
         http_client.clone(),
