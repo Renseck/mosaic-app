@@ -19,19 +19,22 @@ services:
       - "5432"
     ports:
       - "5432:5432" # Exposed for local dev; remove in production
+    restart: unless-stopped
 
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
     depends_on:
       postgres: { condition: service_healthy }
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
     environment:
       GF_DATABASE_TYPE: postgres
       GF_DATABASE_HOST: postgres:5432
       GF_DATABASE_NAME: grafana
       GF_DATABASE_USER: portal
       GF_DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-secret}
-      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
       GF_SECURITY_ALLOW_EMBEDDING: "true"
       GF_AUTH_ANONYMOUS_ENABLED: "true"
       GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
@@ -41,7 +44,12 @@ services:
       - "3000"
     ports:
       - "3000:3000"
-    # NOT exposed to host — only accessible via internal network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:3000/api/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
 
   nocodb:
     image: nocodb/nocodb:latest
@@ -60,7 +68,26 @@ services:
       - "8080"
     ports:
       - "8090:8080" # Exposed for local dev; remove in production
-    # NOT exposed to host — only accessible via internal network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/api/v1/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  bootstrapper:
+    build: ./bootstrap
+    container_name: bootstrapper
+    depends_on:
+      grafana: { condition: service_healthy }
+      nocodb:  { condition: service_healthy }
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      NOCODB_OWNER_EMAIL: ${NOCODB_OWNER_EMAIL:-admin@portal.local}
+      NOCODB_OWNER_PASSWORD: ${NOCODB_OWNER_PASSWORD:-Portal1234!}
+    volumes:
+      - shared:/shared
+    restart: "no"
 
   portal:
     build:
@@ -83,3 +110,4 @@ services:
 
 volumes:
   pgdata:
+  shared:
