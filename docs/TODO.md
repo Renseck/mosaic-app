@@ -10,6 +10,10 @@ After the original plan has been completed, there are a few points that have bee
 - GRAFANA_DATASOURCE_UID=<your-datasource-uid>
 - NOCODB_API_TOKEN=xxxxxxxxxxxxx
 
+Tasks that need to be done directly on the Portal can be done:
+
+- Registering an original admin, so the platform can actually be taken into use.
+
 Do you have ideas on how to solve these problems, to make bootstrapping as clean and reproducible as possible?
 - **API performance**: When directly interfacing with the API, endpoints such as `/api/auth/login` are blazing fast. When the frontend calls them, latency goes up to about half a second, which makes the process feel clunky and slow. Presumably, this is due to hidden delays of a CORS nature, but it's worth investigating.
 

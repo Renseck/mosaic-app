@@ -48,8 +48,27 @@ impl FromRef<AppState> for PgPool {
 /* ============================================================================================== */
 #[tokio::main]
 async fn main() {
-    // Load .env file (look in src/ directory and parent)
-    dotenvy::dotenv().ok();
+    // Load .env file from src/ directory (two levels up from the crate root)
+    let manifest_dir = env!("CARGO_MANIFEST_DIR");
+    let env_path = std::path::Path::new(manifest_dir)
+        .parent()                   // src/backend/ → src/
+        .expect("parent of CARGO_MANIFEST_DIR must exist");
+
+    // Try src/.env first, then fall back to repo root .env
+    let src_env = env_path.join(".env");
+    let root_env = env_path
+        .parent()
+        .map(|p| p.join(".env"))
+        .unwrap_or_default();
+
+    if src_env.is_file() {
+        dotenvy::from_path(&src_env).ok();
+    } else if root_env.is_file() {
+        dotenvy::from_path(&root_env).ok();
+    } else {
+        // Last resort: default behaviour (cwd)
+        dotenvy::dotenv().ok();
+    }
 
     // Initialize tracing
     tracing_subscriber::fmt()
