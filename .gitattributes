@@ -1,1 +1,2 @@
 src/bootstrap/init.sh text eol=lf
+src/backend/.sqlx/** text eol=lf
