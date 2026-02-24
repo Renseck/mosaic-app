@@ -60,6 +60,20 @@ pub async fn post_empty(path: &str) -> Result<(), ApiError> {
 }
 
 /* ============================================================================================== */
+/// POST with a JSON body; expects 204 No Content (no response body to deserialize).
+pub async fn post_json_empty<B: Serialize>(path: &str, body: &B) -> Result<(), ApiError> {
+    check(
+        Request::post(path)
+            .json(body)
+            .map_err(|e| ApiError::Network(e.to_string()))?
+            .send()
+            .await?,
+    )
+    .await?;
+    Ok(())
+}
+
+/* ============================================================================================== */
 pub async fn put_json<B: Serialize, T: DeserializeOwned>(
     path: &str,
     body: &B,

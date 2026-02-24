@@ -1,6 +1,19 @@
-.PHONY: help build run test bench clean fmt lint doc install check
+.PHONY: help \
+        backend-build backend-build-release backend-run backend-watch \
+        backend-test backend-test-verbose backend-check backend-fmt backend-lint \
+        backend-lint-fix backend-doc backend-doc-private backend-bench \
+        backend-audit backend-bloat \
+        frontend-build frontend-build-release frontend-serve frontend-clean \
+        docker-up docker-down docker-services docker-build docker-logs docker-logs-portal \
+        migrate \
+        build run test fmt lint check clean all
 
-# Detect OS
+# ============================================= Paths ============================================ #
+BACKEND  := src/backend
+FRONTEND := src/frontend
+COMPOSE  := src/docker-compose.yml
+
+# =========================================== Detect OS ========================================== #
 ifeq ($(OS),Windows_NT)
     SHELL := powershell.exe
     .SHELLFLAGS := -NoProfile -Command
@@ -16,85 +29,105 @@ else
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
 endif
 
-build: ## Build the project
-	$(CARGO) build
+# ============================================ Backend =========================================== #
+backend-build: ## Build backend (debug)
+	cd $(BACKEND) && $(CARGO) build
 
-build-release: ## Build optimized release binary
-	$(CARGO) build --release
+backend-build-release: ## Build backend (release)
+	cd $(BACKEND) && $(CARGO) build --release
 
-run: ## Run the application
-	$(CARGO) run
+backend-run: ## Run backend server
+	cd $(BACKEND) && $(CARGO) run
 
-run-release: ## Run the release build
-	$(CARGO) run --release
+backend-watch: ## Run backend with hot reload (requires cargo-watch)
+	cd $(BACKEND) && $(CARGO) watch -x run
 
-test: ## Run tests
-	$(CARGO) test
+backend-test: ## Run backend tests
+	cd $(BACKEND) && $(CARGO) test
 
-test-verbose: ## Run tests with verbose output
-	$(CARGO) test -- --nocapture --test-threads=1
+backend-test-verbose: ## Run backend tests with output
+	cd $(BACKEND) && $(CARGO) test -- --nocapture --test-threads=1
 
-bench: ## Run benchmarks
-	$(CARGO) bench
+backend-check: ## Check backend without building
+	cd $(BACKEND) && $(CARGO) check --all-targets --all-features
 
-clean: ## Clean build artifacts
+backend-fmt: ## Format backend code
+	cd $(BACKEND) && $(CARGO) fmt --all
+
+backend-lint: ## Run clippy on backend
+	cd $(BACKEND) && $(CARGO) clippy --all-targets --all-features -- -D warnings
+
+backend-lint-fix: ## Auto-fix clippy warnings in backend
+	cd $(BACKEND) && $(CARGO) clippy --fix --allow-dirty --allow-staged
+
+backend-doc: ## Open backend docs in browser
+	cd $(BACKEND) && $(CARGO) doc --no-deps --open
+
+backend-doc-private: ## Open backend docs (including private items)
+	cd $(BACKEND) && $(CARGO) doc --no-deps --document-private-items --open
+
+backend-bench: ## Run backend benchmarks
+	cd $(BACKEND) && $(CARGO) bench
+
+backend-audit: ## Audit backend dependencies for vulnerabilities
+	cd $(BACKEND) && $(CARGO) audit
+
+backend-bloat: ## Analyse backend binary size
+	cd $(BACKEND) && $(CARGO) bloat --release
+
+# =========================================== Frontend =========================================== #
+frontend-build: ## Build frontend WASM (debug)
+	cd $(FRONTEND) && trunk build
+
+frontend-build-release: ## Build frontend WASM (release, minified)
+	cd $(FRONTEND) 
+	trunk build --release
+
+frontend-serve: ## Start frontend dev server (proxies /api and /proxy to localhost:8080)
+	cd $(FRONTEND) && trunk serve --proxy-backend=http://localhost:8080/api
+
+frontend-clean: ## Remove frontend build output
+	rm -rf $(FRONTEND)/dist
+
+# ============================================ Docker ============================================ #
+docker-up: ## Start the full stack (all services including portal)
+	docker compose -f $(COMPOSE) up -d
+
+docker-down: ## Stop and remove all containers
+	docker compose -f $(COMPOSE) down
+
+docker-services: ## Start supporting services only (postgres, grafana, nocodb)
+	docker compose -f $(COMPOSE) up postgres grafana nocodb -d
+
+docker-build: ## Build the portal Docker image
+	docker compose -f $(COMPOSE) build portal
+
+docker-logs: ## Follow logs from all services
+	docker compose -f $(COMPOSE) logs -f
+
+docker-logs-portal: ## Follow portal service logs only
+	docker compose -f $(COMPOSE) logs -f portal
+
+# =========================================== Database =========================================== #
+migrate: ## Run pending database migrations
+	sqlx migrate run --source $(BACKEND)/src/db/migrations
+
+# ======================== Shortcuts (keep muscle memory from old targets) ======================= #
+build:   backend-build         ## Alias → backend-build
+run:     backend-run           ## Alias → backend-run
+test:    backend-test          ## Alias → backend-test
+check:   backend-check         ## Alias → backend-check
+fmt:     backend-fmt           ## Alias → backend-fmt
+lint:    backend-lint          ## Alias → backend-lint
+
+clean: frontend-clean ## Clean all build artifacts
 ifeq ($(OS),Windows_NT)
-	@powershell -Command "if (Test-Path target) { Remove-Item -Recurse -Force target }; if (Test-Path Cargo.lock) { Remove-Item -Force Cargo.lock }"
+	@powershell -Command "Set-Location $(BACKEND); cargo clean"
 else
-	$(CARGO) clean
+	cd $(BACKEND) && $(CARGO) clean
 endif
 
-fmt: ## Format code
-	$(CARGO) fmt --all
-
-fmt-check: ## Check code formatting
-	$(CARGO) fmt --all -- --check
-
-lint: ## Run clippy linter
-	$(CARGO) clippy --all-targets --all-features -- -D warnings
-
-lint-fix: ## Fix clippy warnings automatically
-	$(CARGO) clippy --fix --allow-dirty --allow-staged
-
-check: ## Check code without building
-	$(CARGO) check --all-targets --all-features
-
-doc: ## Generate documentation
-	$(CARGO) doc --no-deps --open
-
-doc-private: ## Generate documentation including private items
-	$(CARGO) doc --no-deps --document-private-items --open
-
-install: ## Install the binary
-	$(CARGO) install --path .
-
-watch: ## Watch for changes and run tests
-	$(CARGO) watch -x test
-
-coverage: ## Generate test coverage report
-ifeq ($(OS),Windows_NT)
-	@powershell -Command "if (-not (Get-Command cargo-tarpaulin -ErrorAction SilentlyContinue)) { Write-Host 'Installing cargo-tarpaulin...' -ForegroundColor Yellow; cargo install cargo-tarpaulin }; cargo tarpaulin --out Html --output-dir coverage"
-else
-	@command -v cargo-tarpaulin >/dev/null 2>&1 || { echo "Installing cargo-tarpaulin..."; cargo install cargo-tarpaulin; }
-	cargo tarpaulin --out Html --output-dir coverage
-endif
-
-audit: ## Audit dependencies for security vulnerabilities
-ifeq ($(OS),Windows_NT)
-	@powershell -Command "if (-not (Get-Command cargo-audit -ErrorAction SilentlyContinue)) { Write-Host 'Installing cargo-audit...' -ForegroundColor Yellow; cargo install cargo-audit }; cargo audit"
-else
-	@command -v cargo-audit >/dev/null 2>&1 || { echo "Installing cargo-audit..."; cargo install cargo-audit; }
-	cargo audit
-endif
-
-bloat: ## Check binary size and dependencies
-ifeq ($(OS),Windows_NT)
-	@powershell -Command "if (-not (Get-Command cargo-bloat -ErrorAction SilentlyContinue)) { Write-Host 'Installing cargo-bloat...' -ForegroundColor Yellow; cargo install cargo-bloat }; cargo bloat --release"
-else
-	@command -v cargo-bloat >/dev/null 2>&1 || { echo "Installing cargo-bloat..."; cargo install cargo-bloat; }
-	cargo bloat --release
-endif
-
-all: fmt lint test build ## Run formatter, linter, tests, and build
+# =========================================== Compound =========================================== #
+all: backend-fmt backend-lint backend-test backend-build ## Format, lint, test, and build backend
 
 .DEFAULT_GOAL := help

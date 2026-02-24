@@ -3,16 +3,23 @@ use axum::{
     response::IntoResponse,
     Json,
 };
+use reqwest::StatusCode;
 use serde::Deserialize;
 use uuid::Uuid;
 
-use crate::auth::middleware::{RequireAdmin, Role};
+use crate::auth::{middleware::{AuthenticatedUser, RequireAdmin, Role}, password};
 use crate::error::AppError;
 use crate::AppState;
 
 #[derive(Deserialize)]
 pub struct UpdateRoleInput {
     pub role: String,
+}
+
+#[derive(Deserialize)]
+pub struct ChangePasswordInput {
+    pub current_password: String,
+    pub new_password:     String,
 }
 
 /* ============================================================================================== */

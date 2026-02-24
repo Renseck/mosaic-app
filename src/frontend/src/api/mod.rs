@@ -2,3 +2,4 @@ pub mod auth;
 pub mod client;
 pub mod dashboards;
 pub mod templates;
+pub mod users;

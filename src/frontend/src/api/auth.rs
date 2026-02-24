@@ -23,5 +23,21 @@ pub async fn logout() -> Result<(), ApiError> {
 /* ============================================================================================== */
 /// GET /api/auth/me - returns current user or ApiErro::Server(401).
 pub async fn me() -> Result<User, ApiError> {
-    client::get("api/auth/me").await
+    client::get("/api/auth/me").await
+}
+
+/* ============================================================================================== */
+#[derive(Serialize)]
+struct ChangePasswordBody<'a> {
+    current_password: &'a str,
+    new_password: &'a str,
+}
+
+/// POST /api/auth/change-password — 204 on success.
+pub async fn change_password(current: &str, new: &str) -> Result<(), ApiError> {
+    client::post_json_empty(
+        "/api/auth/change-password",
+        &ChangePasswordBody { current_password: current, new_password: new },
+    )
+    .await
 }

@@ -53,7 +53,7 @@ pub fn dashboard_list_page() -> Html {
             /* ====== Page header ====== */
             <div class="flex items-center justify-between mb-6">
                 <div>
-                    <h1 class="text-lg font-bold text-stone-900">{"Dashboards"}</h1>
+                    <h1 class="text-lg font-bold text-stone-900 dark:text-stone-100">{"Dashboards"}</h1>
                     <p class="text-xs text-stone-400 mt-0.5">{"Your custom views and data layouts"}</p>
                 </div>
                 <button

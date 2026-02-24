@@ -65,13 +65,14 @@ pub fn router(state: AppState) -> Router {
 
 fn auth_routes() -> Router<AppState> {
     use axum::routing::post;
-    use crate::auth::handlers::{login, logout, me, register};
+    use crate::auth::handlers::{login, logout, me, register, change_password};
 
     Router::new()
         .route("/register", post(register))
         .route("/login", post(login))
         .route("/logout", post(logout))
         .route("/me", get(me))
+        .route("/change-password", post(change_password))
 }
 
 /* ============================================================================================== */

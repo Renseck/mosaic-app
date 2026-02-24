@@ -48,27 +48,37 @@ pub fn dashboard_view_page(props: &DashboardViewProps) -> Html {
         })
     };
 
+    /* ====== Derive panels from state ====== */
+    let panels: Vec<Panel> = state.data.as_ref()
+        .map(|d| d.panels.clone())
+        .unwrap_or_default();
+
     /* ====== Add panel via picker ====== */
     let on_add_panel = {
         let reload      = reload.clone();
         let show_picker = show_picker.clone();
         let dashboard_id = state.data.as_ref().map(|d| d.dashboard.id.clone()).unwrap_or_default();
-        Callback::from(move |input: CreatePanel| {
+        let panels_snap  = panels.clone(); // snapshot for position calculation
+
+        Callback::from(move |mut input: CreatePanel| {
             let reload       = reload.clone();
             let show_picker  = show_picker.clone();
             let dashboard_id = dashboard_id.clone();
+
+            // Place below all existing panels to avoid overlap.
+            input.grid_y = panels_snap.iter()
+                .map(|p| p.grid_y + p.grid_h)
+                .max()
+                .unwrap_or(0);
+            input.grid_x = 0;
+
             wasm_bindgen_futures::spawn_local(async move {
-                let _ = dashboards::create_panel(&dashboard_id, &input).await;
-                show_picker.set(false);
-                reload.emit(());
+            let _ = dashboards::create_panel(&dashboard_id, &input).await;
+            show_picker.set(false);
+            reload.emit(());
             });
         })
     };
-
-    /* ====== Derive panels from state ====== */
-    let panels: Vec<Panel> = state.data.as_ref()
-        .map(|d| d.panels.clone())
-        .unwrap_or_default();
 
     let dashboard_title = state.data.as_ref()
         .map(|d| d.dashboard.title.clone())
@@ -108,7 +118,7 @@ pub fn dashboard_view_page(props: &DashboardViewProps) -> Html {
                         classes="text-stone-400 hover:text-stone-600 transition-colors text-sm">
                         {"←"}
                     </Link<Route>>
-                    <h1 class="text-lg font-bold text-stone-900">{ &dashboard_title }</h1>
+                    <h1 class="text-lg font-bold text-stone-900 dark:text-stone-100">{ &dashboard_title }</h1>
                     if state.loading {
                         <span class="text-xs text-stone-400">{"(refreshing…)"}</span>
                     }

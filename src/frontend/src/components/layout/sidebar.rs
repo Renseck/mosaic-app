@@ -1,11 +1,31 @@
 use yew::prelude::*;
 use yew_router::prelude::*;
-use crate::router::Route;
+use crate::{context::auth_context::AuthContext, router::Route};
+
+#[derive(Properties, PartialEq)]
+pub struct SidebarProps {
+    pub is_open: bool,
+    pub on_close: Callback<()>,
+}
 
 #[function_component(Sidebar)]
-pub fn sidebar() -> Html {
+pub fn sidebar(props: &SidebarProps) -> Html {
+    let auth = use_context::<AuthContext>().expect("AuthContext missing");
+    let is_admin = auth.user.as_ref().map(|u| u.role.is_admin()).unwrap_or(false);
+
+    // On desktop (md+) always visible via CSS; on mobile slide in/out.
+    let aside_class = if props.is_open {
+        "fixed inset-y-0 left-0 z-50 flex flex-col w-56 bg-slate-900 \
+         transition-transform duration-200 translate-x-0 \
+         md:relative md:translate-x-0"
+    } else {
+        "fixed inset-y-0 left-0 z-50 flex flex-col w-56 bg-slate-900 \
+         transition-transform duration-200 -translate-x-full \
+         md:relative md:translate-x-0"
+    };
+
     html! {
-        <aside class="flex flex-col w-56 min-h-screen bg-slate-900 shrink-0">
+        <aside class={aside_class}>
             /* Logo / brand */
             <div class="flex items-center gap-2 px-5 h-14 border-b border-slate-800">
                 <div class="w-2 h-2 rounded-sm bg-amber-500" />
@@ -21,6 +41,9 @@ pub fn sidebar() -> Html {
                 <div class="pt-4">
                     <NavSection label="System" />
                     <SidebarLink route={Route::Settings} label="Settings" icon="⚙"/>
+                    if is_admin {
+                        <SidebarLink route={Route::AdminUsers} label="Users" icon="◎" />
+                    }
                 </div>
             </nav>
 

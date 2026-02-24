@@ -62,5 +62,24 @@ services:
       - "8090:8080" # Exposed for local dev; remove in production
     # NOT exposed to host — only accessible via internal network
 
+  portal:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: portal
+    depends_on:
+      postgres: { condition: service_healthy }
+    environment:
+      DATABASE_URL: "postgres://portal:${POSTGRES_PASSWORD:-secret}@postgres:5432/portal_db"
+      STATIC_DIR: /app/frontend-dist
+      SESSION_TTL_HOURS: "24"
+      GRAFANA_URL: http://localhost:3000
+      NOCODB_URL: http://localhost:8090
+      NOCODB_API_TOKEN: ${NOCODB_API_TOKEN}
+      RUST_LOG: info
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
 volumes:
   pgdata:

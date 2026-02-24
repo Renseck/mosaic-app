@@ -24,7 +24,7 @@ pub fn panel_frame(props: &PanelFrameProps) -> Html {
     };
 
     html! {
-        <div class="flex flex-col h-full bg-white border border-stone-200 rounded-lg overflow-hidden shadow-sm">
+        <div class="flex flex-col h-full bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg overflow-hidden shadow-sm">
 
             /* ====== Header ====== */
             <div class={classes!(
@@ -41,7 +41,7 @@ pub fn panel_frame(props: &PanelFrameProps) -> Html {
                             {"⠿"}
                         </span>
                     }
-                    <span class="text-xs font-semibold text-stone-600 truncate">
+                    <span class="text-xs font-semibold text-stone-700 dark:text-stone-200 truncate">
                         { panel.title.as_deref().unwrap_or("—") }
                     </span>
                 </div>
@@ -50,7 +50,7 @@ pub fn panel_frame(props: &PanelFrameProps) -> Html {
                     <button
                         onclick={on_delete}
                         title="Remove panel"
-                        class="ml-2 text-stone-300 hover:text-red-500 transition-colors text-sm shrink-0"
+                        class="ml-2 text-stone-400 dark:text-stone-500 hover:text-red-500 dark:hover:text-red-400 transition-colors text-sm shrink-0"
                     >
                         {"✕"}
                     </button>

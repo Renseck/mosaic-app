@@ -14,6 +14,8 @@ pub enum Route {
     TemplateList,
     #[at("/settings")]
     Settings,
+    #[at("/admin/users")]
+    AdminUsers,
     #[at("/")]
     Home,
     #[not_found]

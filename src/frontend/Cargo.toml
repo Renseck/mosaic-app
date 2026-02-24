@@ -16,11 +16,12 @@ yew-router = "0.19.0"
 
 # HTTP client (WASM-compatible)
 gloo-net = { version = "0.6.0", features = ["http"] }
+gloo-timers = { version = "0.3.0", features = ["futures"] }
 
 # Browser APIs
 gloo-utils = "0.2.0"
 gloo-storage = "0.3.0"
-web-sys = { version = "0.3.85", features = ["Document", "Element", "HtmlDocument", "HtmlElement", "HtmlInputElement", "HtmlTextAreaElement", "Window", "console"] }
+web-sys = { version = "0.3.85", features = ["Document", "DomTokenList", "Element", "HtmlDocument", "HtmlElement", "HtmlInputElement", "HtmlSelectElement", "HtmlTextAreaElement", "MediaQueryList", "Window", "console"] }
 wasm-bindgen = "0.2.108"
 wasm-bindgen-futures = "0.4.58"
 js-sys = "0.3.85"
@@ -35,3 +36,4 @@ futures = "0.3.32"
 # Error handling
 thiserror = "2.0.18"
 mime_guess = "2.0.5"
+

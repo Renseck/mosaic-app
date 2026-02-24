@@ -197,3 +197,46 @@ pub async fn me(user: AuthenticatedUser) -> impl IntoResponse {
         "role": user.role,
     }))
 }
+
+/* ============================================================================================== */
+/// POST /api/auth/change-password — changes the authenticated user's password.
+#[derive(Deserialize)]
+pub struct ChangePasswordInput {
+    pub current_password: String,
+    pub new_password: String,
+}
+
+pub async fn change_password(
+    State(state): State<AppState>,
+    user: AuthenticatedUser,
+    Json(input): Json<ChangePasswordInput>,
+) -> Result<impl IntoResponse, AppError> {
+    if input.new_password.len() < 8 {
+        return Err(AppError::Validation(
+            "new password must be at least 8 characters".into(),
+        ));
+    }
+
+    let row = sqlx::query!(
+        "SELECT password_hash FROM portal.users WHERE id = $1",
+        user.user_id
+    )
+    .fetch_optional(&state.pool)
+    .await?
+    .ok_or_else(|| AppError::NotFound("user not found".into()))?;
+
+    if !password::verify_password(&input.current_password, &row.password_hash)? {
+        return Err(AppError::Unauthorized);
+    }
+
+    let new_hash = password::hash_password(&input.new_password)?;
+    sqlx::query!(
+        "UPDATE portal.users SET password_hash = $1, updated_at = now() WHERE id = $2",
+        new_hash,
+        user.user_id
+    )
+    .execute(&state.pool)
+    .await?;
+
+    Ok(StatusCode::NO_CONTENT)
+}
