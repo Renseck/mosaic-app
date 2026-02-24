@@ -80,8 +80,7 @@ frontend-build: ## Build frontend WASM (debug)
 	cd $(FRONTEND) && trunk build
 
 frontend-build-release: ## Build frontend WASM (release, minified)
-	cd $(FRONTEND) 
-	trunk build --release
+	cd $(FRONTEND) && trunk build --release
 
 frontend-serve: ## Start frontend dev server (proxies /api and /proxy to localhost:8080)
 	cd $(FRONTEND) && trunk serve --proxy-backend=http://localhost:8080/api
