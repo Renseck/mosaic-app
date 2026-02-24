@@ -15,7 +15,7 @@ COMPOSE  := src/docker-compose.yml
 
 # =========================================== Detect OS ========================================== #
 ifeq ($(OS),Windows_NT)
-    SHELL := powershell.exe
+    SHELL := cmd.exe
     .SHELLFLAGS := -NoProfile -Command
     CARGO := cargo
 else
