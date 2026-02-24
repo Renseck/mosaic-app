@@ -36,7 +36,7 @@ pub fn template_list() -> Html {
                 <Link<Route>
                     to={Route::TemplateNew}
                     classes="flex items-center gap-1.5 px-4 py-2 
-                             text-sm font-semibold text-slate-900 dark:text-slate-100
+                             text-sm font-semibold text-slate-900 dark:text-slate-900
                              bg-amber-500 dark:bg-amber-400 rounded-lg 
                              hover:bg-amber-400 dark:hover:bg-amber-500 transition-colors"
                 >
