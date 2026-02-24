@@ -29,15 +29,15 @@ pub fn panel_frame(props: &PanelFrameProps) -> Html {
             /* ====== Header ====== */
             <div class={classes!(
                 "flex", "items-center", "justify-between",
-                "px-3", "py-2", "border-b", "border-stone-100",
-                "bg-stone-50", "shrink-0",
+                "px-3", "py-2", "border-b", "border-stone-100", "dark:border-stone-800",
+                "bg-stone-50", "dark:bg-stone-900", "shrink-0",
                 // amber top stripe visible only in edit mode
-                if props.edit_mode { "border-t-2 border-t-amber-500" } else { "" }
+                if props.edit_mode { "border-t-2 border-t-amber-500 dark:border-t-amber-400" } else { "" }
             )}>
                 <div class="flex items-center gap-2 min-w-0">
                     if props.edit_mode {
                         // Drag handle
-                        <span class="drag-handle cursor-grab text-stone-300 hover:text-stone-500 select-none shrink-0">
+                        <span class="drag-handle cursor-grab text-stone-300 dark:text-stone-600 hover:text-stone-500 dark:hover:text-stone-300 select-none shrink-0">
                             {"⠿"}
                         </span>
                     }
@@ -83,7 +83,7 @@ fn render_panel_content(panel: &Panel) -> Html {
             } />
         },
         _ => html! {
-            <div class="flex items-center justify-center h-full text-xs text-stone-400">
+            <div class="flex items-center justify-center h-full text-xs text-stone-400 dark:text-stone-500">
                 { format!("Unknown panel type: {}", panel.panel_type) }
             </div>
         },

@@ -7,7 +7,7 @@
 
 
     <!-- Tailwind CSS via CDN (development convenience; replace with built CSS in production) -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
 
     <script>
         tailwind = { config: { darkMode: 'class' } };
@@ -33,13 +33,13 @@
         .ui-resizable-handle { opacity: 0.3; }
         .ui-resizable-handle:hover { opacity: 0.8; }
     </style>
-<link rel="modulepreload" href="/mosaic-frontend-e38553f823dbb2a0.js" crossorigin="anonymous" integrity="sha384-xYUFRh7nWtx915un6hc/dv0Ug8NjWyC9VRkrscLt0d3/dYfzAHJbfOmZ8x3vPiIW"><link rel="preload" href="/mosaic-frontend-e38553f823dbb2a0_bg.wasm" crossorigin="anonymous" integrity="sha384-J+agDZDW+pf8iwQWUUSO2Q9BYG5dRdVAQUAUuk3MsJf53FkC3AdivBI2B0SNxa25" as="fetch" type="application/wasm"></head>
+<link rel="modulepreload" href="/mosaic-frontend-d259be1095bcb728.js" crossorigin="anonymous" integrity="sha384-sR+zx9raps2DU6Tv8V3GY1z7kLKRuDeLjB079pr2EQeVbHSWo/e3T+RWGQzhAZ3z"><link rel="preload" href="/mosaic-frontend-d259be1095bcb728_bg.wasm" crossorigin="anonymous" integrity="sha384-XlmfcnM1/akMztqrkhqjfYj1UKoycT5zQyiV40i5rE3r/rQ/kjWXOA/d7bInVLUq" as="fetch" type="application/wasm"></head>
 <body class="bg-stone-50 dark:bg-stone-900 text-gray-900 dark:text-stone-100">
     <div id="app"></div>
 
 <script type="module">
-import init, * as bindings from '/mosaic-frontend-e38553f823dbb2a0.js';
-const wasm = await init({ module_or_path: '/mosaic-frontend-e38553f823dbb2a0_bg.wasm' });
+import init, * as bindings from '/mosaic-frontend-d259be1095bcb728.js';
+const wasm = await init({ module_or_path: '/mosaic-frontend-d259be1095bcb728_bg.wasm' });
 
 
 window.wasmBindings = bindings;

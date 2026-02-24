@@ -99,7 +99,7 @@ pub fn settings_page() -> Html {
                         )}
                     >
                         <span class={format!(
-                            "inline-block h-4 w-4 transform rounded-full bg-white shadow \
+                            "inline-block h-4 w-4 transform rounded-full bg-white dark:bg-stone-800 shadow \
                              transition-transform {}",
                             if theme.dark { "translate-x-6" } else { "translate-x-1" }
                         )} />

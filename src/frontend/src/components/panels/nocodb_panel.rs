@@ -10,7 +10,7 @@ pub struct NocodbPanelProps {
 pub fn nocodb_panel(props: &NocodbPanelProps) -> Html {
     if props.source_url.is_empty() {
         return html! {
-            <div class="flex items-center justify-center h-full text-xs text-stone-400">
+            <div class="flex items-center justify-center h-full text-xs text-stone-400 dark:text-stone-500">
                 {"No source URL configured"}
             </div>
         };

@@ -73,17 +73,18 @@ pub fn field_editor(props: &FieldEditorProps) -> Html {
                     { for props.fields.iter().enumerate().map(|(i, field)| {
                         let remove_cb = on_remove(i);
                         let type_badge_class = match field.field_type.as_str() {
-                            "number" => "bg-amber-100 text-amber-800",
-                            "date"   => "bg-blue-100 text-blue-800",
-                            "select" => "bg-purple-100 text-purple-800",
-                            _        => "bg-stone-100 text-stone-700",
+                            "number" => "bg-amber-100 dark:bg-amber-900 /30 text-amber-800 dark:text-amber-300",
+                            "date"   => "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300",
+                            "select" => "bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-ambpurpleer-300",
+                            _        => "bg-stone-100 dark:bg-stone-900 text-stone-700 dark:text-stone-400",
                         };
                         html! {
-                            <div class="flex items-center gap-2 px-3 py-2 bg-white border border-stone-200 rounded-lg">
-                                <span class="font-mono text-sm font-medium text-stone-800 flex-1">
+                            <div class="flex items-center gap-2 px-3 py-2 bg-white dark:bg-stone-800 
+                                        border border-stone-200 dark:border-stone-700 rounded-lg">
+                                <span class="font-mono text-sm font-medium text-stone-800 dark:text-stone-100 flex-1">
                                     { &field.name }
                                     if let Some(ref unit) = field.unit {
-                                        <span class="ml-1 text-xs text-stone-400">{ format!("({unit})") }</span>
+                                        <span class="ml-1 text-xs text-stone-400 dark:text-stone-500">{ format!("({unit})") }</span>
                                     }
                                 </span>
                                 <span class={classes!(
@@ -95,7 +96,9 @@ pub fn field_editor(props: &FieldEditorProps) -> Html {
                                 <button
                                     type="button"
                                     onclick={remove_cb}
-                                    class="text-stone-300 hover:text-red-500 transition-colors text-sm ml-1"
+                                    class="text-stone-300 dark:text-stone-600 
+                                           hover:text-red-500 dark:text-red-300 
+                                           transition-colors text-sm ml-1"
                                     title="Remove field"
                                 >
                                     {"✕"}
@@ -108,7 +111,7 @@ pub fn field_editor(props: &FieldEditorProps) -> Html {
 
             // ── Add new field ───────────────────────────────────────────────
             <form onsubmit={on_add}
-                class="flex flex-wrap gap-2 p-3 bg-stone-50 border border-dashed border-stone-300 rounded-lg">
+                class="flex flex-wrap gap-2 p-3 bg-stone-50 dark:bg-stone-900 border border-dashed border-stone-300 dark:border-stone-600 rounded-lg">
 
                 if let Some(err) = (*name_error).clone() {
                     <p class="w-full text-xs text-red-600">{ err }</p>
@@ -124,8 +127,12 @@ pub fn field_editor(props: &FieldEditorProps) -> Html {
                             new_name.set(el.value());
                         }
                     })}
-                    class="flex-1 min-w-24 rounded border border-stone-300 px-2 py-1.5 text-sm font-mono
-                           focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                    class="flex-1 min-w-24 rounded border 
+                           bg-white dark:bg-stone-700
+                           text-stone-900 dark:text-stone-100
+                           border-stone-300 dark:border-stone-600 px-2 py-1.5 text-sm font-mono
+                           focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400 
+                           focus:border-transparent"
                 />
 
                 <select
@@ -137,8 +144,11 @@ pub fn field_editor(props: &FieldEditorProps) -> Html {
                             new_type.set(el.value());
                         }
                     })}
-                    class="rounded border border-stone-300 px-2 py-1.5 text-sm bg-white
-                           focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    class="rounded border border-stone-300 dark:border-stone-600
+                           text-stone-900 dark:text-stone-100
+                           px-2 py-1.5 text-sm 
+                           bg-white dark:bg-stone-700
+                           focus:outline-none focus:ring-2 focus:ring-amber-500 darl:focus:ring-amber-400"
                 >
                     <option value="number">{"number"}</option>
                     <option value="text">{"text"}</option>
@@ -156,14 +166,19 @@ pub fn field_editor(props: &FieldEditorProps) -> Html {
                             new_unit.set(el.value());
                         }
                     })}
-                    class="w-28 rounded border border-stone-300 px-2 py-1.5 text-sm
+                    class="w-28 rounded border border-stone-300 dark:border-stone-600
+                           text-stone-900 dark:text-stone-100
+                           px-2 py-1.5 text-sm
+                           bg-white dark:bg-stone-700
                            focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 />
 
                 <button
                     type="submit"
-                    class="px-3 py-1.5 text-sm font-semibold rounded bg-amber-500 text-slate-900
-                           hover:bg-amber-400 transition-colors whitespace-nowrap"
+                    class="px-3 py-1.5 text-sm font-semibold 
+                           rounded bg-amber-500 dark:bg-amber-400
+                           text-slate-900 dark:text-slate-100
+                           hover:bg-amber-400 dark:hover:bg-amber-500 transition-colors whitespace-nowrap"
                 >
                     {"+ Add Field"}
                 </button>

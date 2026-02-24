@@ -15,11 +15,11 @@ pub fn sidebar(props: &SidebarProps) -> Html {
 
     // On desktop (md+) always visible via CSS; on mobile slide in/out.
     let aside_class = if props.is_open {
-        "fixed inset-y-0 left-0 z-50 flex flex-col w-56 bg-slate-900 \
+        "fixed inset-y-0 left-0 z-50 flex flex-col w-56 bg-slate-900 dark:bg-slate-900 \
          transition-transform duration-200 translate-x-0 \
          md:relative md:translate-x-0"
     } else {
-        "fixed inset-y-0 left-0 z-50 flex flex-col w-56 bg-slate-900 \
+        "fixed inset-y-0 left-0 z-50 flex flex-col w-56 bg-slate-900 dark:bg-slate-900 \
          transition-transform duration-200 -translate-x-full \
          md:relative md:translate-x-0"
     };
