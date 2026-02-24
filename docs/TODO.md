@@ -46,7 +46,8 @@ After the original plan has been completed, there are a few points that have bee
 - NOCODB_API_TOKEN=xxxxxxxxxxxxx --> (POST `/api/v2/meta/bases/{baseId}/api-tokens`, requires API token)
   body: 
 ```json
-{"description": "This API token is for ABC application"
+{
+  "description": "This API token is for ABC application"
 }
 ```
 
