@@ -81,10 +81,13 @@ services:
     depends_on:
       grafana: { condition: service_healthy }
       nocodb:  { condition: service_healthy }
+      portal:  { condition: service_healthy }
     environment:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
       NOCODB_OWNER_EMAIL: ${NOCODB_OWNER_EMAIL:-admin@portal.local}
       NOCODB_OWNER_PASSWORD: ${NOCODB_OWNER_PASSWORD:-Portal1234!}
+      PORTAL_ADMIN_USERNAME: ${PORTAL_ADMIN_USERNAME:-admin}
+      PORTAL_ADMIN_PASSWORD: ${PORTAL_ADMIN_PASSWORD:-Owner1234!}
     volumes:
       - shared:/shared
     restart: "no"
@@ -96,16 +99,27 @@ services:
     container_name: portal
     depends_on:
       postgres: { condition: service_healthy }
+      grafana:  { condition: service_healthy }
+      nocodb:   { condition: service_healthy }
     environment:
-      DATABASE_URL: ${DATABASE_URL}
-      STATIC_DIR: /app/frontend-dist
+      STATIC_DIR: /app/static
+      DATABASE_URL: postgres://portal:${POSTGRES_PASSWORD:-secret}@postgres:5432/portal_db
+      GRAFANA_INTERNAL_URL: http://grafana:3000
+      GRAFANA_SERVICE_ACCOUNT_TOKEN: ${GRAFANA_SERVICE_ACCOUNT_TOKEN:-glsa_xxxxxxxxxxxx}
+      GRAFANA_DATASOURCE_UID: ${GRAFANA_DATASOURCE_UID:-portal-postgres-ds}
+      NOCODB_INTERNAL_URL: http://nocodb:8080
+      NOCODB_API_TOKEN: ${NOCODB_API_TOKEN:-xxxxxxxxxxxxx}
+      SESSION_SECRET: ${SESSION_SECRET:-d4a5b084c721a40550d4aaf3a6236e07e882fe5e3809bf495b2bb5c384c00bcb}
       SESSION_TTL_HOURS: "24"
-      GRAFANA_URL: ${GRAFANA_INTERNAL_URL}
-      NOCODB_URL: ${NOCODB_INTERNAL_URL}
-      NOCODB_API_TOKEN: ${NOCODB_API_TOKEN}
-      RUST_LOG: info
+      BIND_ADDRESS: "0.0.0.0:8080"
+      RUST_LOG: info,backend=debug
     ports:
       - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/api/health || exit 0"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     restart: unless-stopped
 
 volumes:

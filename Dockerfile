@@ -21,7 +21,7 @@ RUN trunk build --release
 FROM rust:1.93-slim AS backend-builder
 
 RUN apt-get update && apt-get install -y \
-    pkg-config libssl-dev \
+    pkg-config libssl-dev musl-tools musl-dev \
     && rm -rf /var/lib/apt/lists/*
 
 RUN rustup target add x86_64-unknown-linux-musl    
