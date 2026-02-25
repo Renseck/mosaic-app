@@ -82,13 +82,16 @@ impl NocodbClient {
         fields: &[FieldDefinition],
     ) -> Result<CreatedTable, AppError> {
         let columns: Vec<serde_json::Value> = fields.iter().map(|field| {
-            let uidt = match field.field_type.as_str() {
-                "number" => "Number",
-                "date"   => "Date",
-                "select" => "SingleSelect",
-                _        => "SingleLineText",
-            };
-            json!({ "title": field.name, "uidt": uidt })
+            match field.field_type.as_str() {
+                "number" => json!({
+                    "title": field.name,
+                    "uidt":  "Decimal",
+                    "meta":  { "precision": 8 }
+                }),
+                "date"   => json!({ "title": field.name, "uidt": "Date" }),
+                "select" => json!({ "title": field.name, "uidt": "SingleSelect" }),
+                _        => json!({ "title": field.name, "uidt": "SingleLineText" }),
+            }
         }).collect();
 
         let resp = self.client
@@ -184,16 +187,20 @@ impl NocodbClient {
         fields: &[FieldDefinition],
     ) -> Result<(), AppError> {
         for field in fields {
-            let uidt = match field.field_type.as_str() {
-                "number" => "Number",
-                "date"   => "Date",
-                "select" => "SingleSelect",
-                _        => "SingleLineText",
+            let column = match field.field_type.as_str() {
+                "number" => json!({
+                    "title": field.name,
+                    "uidt":  "Decimal",
+                    "meta":  { "precision": 8 }
+                }),
+                "date"   => json!({ "title": field.name, "uidt": "Date" }),
+                "select" => json!({ "title": field.name, "uidt": "SingleSelect" }),
+                _        => json!({ "title": field.name, "uidt": "SingleLineText" }),
             };
             self.client
                 .post(self.url(&format!("/api/v2/meta/tables/{table_id}/fields")))
                 .header(self.auth().0, self.auth().1)
-                .json(&json!({ "title": field.name, "uidt": uidt }))
+                .json(&column)
                 .send().await
                 .map_err(|e| AppError::Internal(e.into()))?
                 .error_for_status()
