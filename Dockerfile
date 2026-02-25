@@ -43,6 +43,8 @@ WORKDIR /app
 COPY --from=backend-builder /backend/target/x86_64-unknown-linux-musl/release/mosaic-app /usr/local/bin/mosaic-app
 # Axum's SPA handler serves these as static files
 COPY --from=frontend-builder /frontend/dist /app/static
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 EXPOSE 8080
-CMD ["mosaic-app"]
+ENTRYPOINT ["/entrypoint.sh"]

@@ -1,166 +1,88 @@
-# MyProject
+# Mosaic
 
-A Rust project template with best practices and modern tooling.
+A self-hosted personal data portal that unifies data entry, visualization, and navigation into a single authenticated interface.
 
-## Features
+Mosaic combines [NocoDB](https://nocodb.com/) for structured data entry, [Grafana](https://grafana.com/) for visualization, and a custom drag-and-drop dashboard grid into one cohesive application. An Axum backend serves as the single entry point — Grafana and NocoDB run on an internal Docker network, accessed exclusively through a reverse proxy. No CORS headaches, no exposed ports, just one URL.
 
-- Modern Rust project structure
-- CLI with clap
-- Configuration management with serde
-- Error handling with thiserror and anyhow
-- Logging with tracing
-- Comprehensive testing setup
-- Benchmarking with criterion
-- CI/CD with GitHub Actions
+## How It Works
 
-## Prerequisites
+- **Define a dataset template** — name your dataset and define its fields (numeric, text, date, etc.)
+- **Mosaic provisions everything** — a NocoDB table and form for data entry, a Grafana dashboard with time-series panels for each numeric field, and a portal dashboard page that embeds it all
+- **Enter data through NocoDB forms**, see it visualized in Grafana charts, and arrange everything on customizable dashboard grids with drag-and-drop
 
-- Rust 1.90+ (install from [rustup.rs](https://rustup.rs))
-- Cargo (comes with Rust)
+All of this happens behind a single authentication layer. Register users, assign roles (admin / editor / viewer), and share dashboards — all from the same interface.
 
-## Installation
+## Tech Stack
 
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/myproject.git
-cd myproject
+| Layer       | Technology                          |
+|-------------|-------------------------------------|
+| Backend     | Rust, Axum, SQLx, Tokio             |
+| Frontend    | Yew (Rust/WASM), Tailwind, gridstack.js |
+| Database    | PostgreSQL 18                       |
+| Viz         | Grafana OSS                         |
+| Data entry  | NocoDB                              |
+| Runtime     | Docker Compose                      |
 
-# Build the project
-cargo build
+## Getting Started
 
-# Or use make
-make build
+Launching Mosaic is a single command:
+
+```sh
+cp src/.env.example src/.env   # review and adjust if needed
+make docker-up
 ```
 
-## Configuration
+That's it. The stack bootstraps itself completely — Postgres, Grafana, NocoDB, and the portal application all start up, a bootstrapper container provisions service accounts and API tokens, and a default admin user is created automatically. Once healthy, the portal is available at [http://localhost:8080](http://localhost:8080).
 
-Copy `.env.example` to `.env` and adjust settings:
+Default credentials (configurable in `.env`):
 
-```bash
-cp .env.example .env
-```
+| Service | Username | Password      |
+|---------|----------|---------------|
+| Portal  | admin    | Owner1234!    |
 
-Create a `config.toml` file for application settings:
+To tear everything down:
 
-```toml
-environment = "development"
-debug = true
-
-[app]
-name = "myproject"
-data_dir = "./data"
-```
-
-## Usage
-
-```bash
-# Run the application
-cargo run -- run
-
-# Or using make
-make run
-
-# Show help
-cargo run -- --help
-
-# Run with verbose logging
-cargo run -- -vv run
-
-# Run with input
-cargo run -- run --input "test data"
-
-# Show application info
-cargo run -- info
-
-# Generate shell completions
-cargo run -- completions bash > myproject.bash
+```sh
+make docker-down
 ```
 
 ## Development
 
-```bash
-# Run tests
-make test
+For local development, start the supporting services and run the backend and frontend separately:
 
-# Run tests with output
-make test-verbose
-
-# Run benchmarks
-make bench
-
-# Format code
-make fmt
-
-# Run linter
-make lint
-
-# Check without building
-make check
-
-# Generate documentation
-make doc
-
-# Watch for changes and run tests
-cargo watch -x test
+```sh
+make docker-services              # start Postgres, Grafana, NocoDB
+make backend-watch                # backend with hot reload (requires cargo-watch)
+make frontend-serve               # Yew dev server with proxy to backend
 ```
 
-## Project Structure
+Run `make help` for the full list of available targets.
+
+### Prerequisites (local dev)
+
+- Rust (latest stable) with the `wasm32-unknown-unknown` target
+- [Trunk](https://trunkrs.dev/) for building the Yew frontend
+- Docker and Docker Compose
+
+## Architecture
+
+The Axum backend is the only service exposed outside Docker. Grafana and NocoDB are internal — all access is routed through the reverse proxy at `/proxy/grafana/*` and `/proxy/nocodb/*`. This means session cookies flow naturally to iframed content without any cross-origin configuration.
 
 ```
-src/
-  ├── main.rs          # Application entry point
-  ├── lib.rs           # Library root
-  ├── cli.rs           # CLI implementation
-  ├── config/          # Configuration
-  ├── core/            # Core logic
-  └── error.rs         # Error types
-
-tests/                 # Integration tests
-benches/               # Benchmarks
-examples/              # Example usage
+Browser
+  |
+  v
+[Axum :8080] -- /api/*            -- REST handlers
+  |           -- /proxy/grafana/*  -- Grafana (internal :3000)
+  |           -- /proxy/nocodb/*   -- NocoDB  (internal :8080)
+  |           -- /*                -- Yew SPA (WASM)
+  |
+  v
+[PostgreSQL :5432]
 ```
 
-## Building
-
-```bash
-# Debug build
-cargo build
-
-# Release build (optimized)
-cargo build --release
-
-# The binary will be in target/release/myproject
-```
-
-## Testing
-
-```bash
-# Run all tests
-cargo test
-
-# Run specific test
-cargo test test_name
-
-# Run tests with output
-cargo test -- --nocapture
-
-# Run integration tests only
-cargo test --test integration_test
-```
-
-## Benchmarking
-
-```bash
-# Run benchmarks
-cargo bench
-
-# Results will be in target/criterion/
-```
+For more detail, see [docs/PLAN.md](docs/PLAN.md).
 
 ## License
 
-MIT License
-
-## Contributing
-
-Contributions welcome! Please open an issue or submit a pull request.
+TBD

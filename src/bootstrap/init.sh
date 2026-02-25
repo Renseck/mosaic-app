@@ -12,13 +12,10 @@ fi
 
 GRAFANA_URL="http://grafana:3000"
 NOCODB_URL="http://nocodb:8080"
-PORTAL_URL="http://portal:8080"
 GRAFANA_ADMIN_USER="admin"
 GRAFANA_ADMIN_PASS="${GF_SECURITY_ADMIN_PASSWORD:-admin}"
 NOCODB_OWNER_EMAIL="${NOCODB_OWNER_EMAIL:-admin@portal.local}"
 NOCODB_OWNER_PASS="${NOCODB_OWNER_PASSWORD:-Portal1234!}"
-PORTAL_ADMIN_USERNAME="${PORTAL_ADMIN_USERNAME:-admin}"
-PORTAL_ADMIN_PASSWORD="${PORTAL_ADMIN_PASSWORD:-Owner1234!}"
 
 # --------------------------------------------------------------------------- #
 #  Helpers                                                                     #
@@ -94,16 +91,6 @@ API_TOKEN_RESPONSE=$(curl -sf -X POST "${NOCODB_URL}/api/v1/tokens" \
 
 NOCODB_TOKEN=$(echo "$API_TOKEN_RESPONSE" | jq -r '.token')
 echo "   API token created successfully"
-
-# --------------------------------------------------------------------------- #
-#  Portal admin bootstrap                                                      #
-# --------------------------------------------------------------------------- #
-
-PORTAL_ADMIN_RESPONSE=$(curl -sf -X POST "${PORTAL_URL}/api/auth/register" \
-    -H "Content-Type: application/json" \
-    -d "{\"username\":\"${PORTAL_ADMIN_USERNAME}\",\"password\":\"${PORTAL_ADMIN_PASSWORD}\"}")
-
-echo "   Portal admin user created succesfully"
 
 # --------------------------------------------------------------------------- #
 #  Write results                                                               #

@@ -78,6 +78,20 @@ async fn main() {
     // Load configuration
     let config = AppConfig::from_env().expect("Failed to load configuration");
     tracing::info!("Starting mosaic-app on {}", config.bind_address);
+    
+    // Log truncated secrets so we can verify bootstrap worked
+    let gf_token = &config.grafana_service_account_token;
+    let nc_token = &config.nocodb_api_token;
+    tracing::info!(
+        "Grafana token: {}…{}",
+        &gf_token[..gf_token.len().min(8)],
+        &gf_token[gf_token.len().saturating_sub(4)..],
+    );
+    tracing::info!(
+        "NocoDB token: {}…{}",
+        &nc_token[..nc_token.len().min(8)],
+        &nc_token[nc_token.len().saturating_sub(4)..],
+    );
 
     // Create database pool
     let pool = create_pool(&config.database_url)
