@@ -25,7 +25,7 @@ All of this happens behind a single authentication layer. Register users, assign
 
 ## Getting Started
 
-Launching Mosaic is a single command:
+Launching Mosaic is a single command (or two, if you want to be pedantic):
 
 ```sh
 cp src/.env.example src/.env   # review and adjust if needed
