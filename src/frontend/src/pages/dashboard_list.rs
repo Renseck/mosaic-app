@@ -33,7 +33,7 @@ pub fn dashboard_list_page() -> Html {
             let show_form = show_form.clone();
             let new_title = new_title.clone();
             let creating  = creating.clone();
-            let reload    = reload.clone();
+            let reload = reload.clone();
             if title.is_empty() { return; }
             creating.set(true);
             wasm_bindgen_futures::spawn_local(async move {
@@ -124,8 +124,23 @@ pub fn dashboard_list_page() -> Html {
                     </div>
                 } else {
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        { for dashboards.iter().map(|d| html! {
-                            <DashboardCard dashboard={d.clone()} />
+                        { for dashboards.iter().map(|d| {
+                            let reload = reload.clone();
+                            let on_delete = {
+                                let id = d.id.clone();
+                                let reload = reload.clone();
+                                Callback::from(move |_: ()| {
+                                    let id = id.clone();
+                                    let reload = reload.clone();
+                                    wasm_bindgen_futures::spawn_local(async move {
+                                        let _ = dashboards::delete_dashboard(&id).await;
+                                        reload.emit(());
+                                    });
+                                })
+                            };
+                            html! {
+                                <DashboardCard dashboard={d.clone()} {on_delete} />
+                            }
                         })}
                     </div>
                 }
@@ -141,11 +156,22 @@ pub fn dashboard_list_page() -> Html {
 #[derive(Properties, PartialEq)]
 struct DashboardCardProps {
     dashboard: Dashboard,
+    on_delete: Callback<()>,
 }
 
 #[function_component(DashboardCard)]
 fn dashboard_card(props: &DashboardCardProps) -> Html {
     let d = &props.dashboard;
+
+    let on_delete_click = {
+        let on_delete = props.on_delete.clone();
+        Callback::from(move |e: MouseEvent| {
+            e.prevent_default();
+            e.stop_propagation();
+            on_delete.emit(());
+        })
+    };
+
     html! {
         <Link<Route>
             to={Route::DashboardView { slug: d.slug.clone() }}
@@ -166,6 +192,18 @@ fn dashboard_card(props: &DashboardCardProps) -> Html {
                         { format!("/{}", d.slug) }
                     </p>
                 </div>
+                <button
+                    onclick={on_delete_click}
+                    title="Delete dashboard"
+                    class="opacity-0 group-hover:opacity-100 p-1.5 rounded-md
+                           text-stone-400 hover:text-red-500 hover:bg-red-50
+                           dark:text-stone-500 dark:hover:text-red-400 dark:hover:bg-red-900/30
+                           transition-all shrink-0"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                    </svg>
+                </button>
             </div>
             if d.is_shared {
                 <span class="mt-3 inline-block text-xs text-amber-600 dark:text-amber-300 font-medium">{"Shared"}</span>
