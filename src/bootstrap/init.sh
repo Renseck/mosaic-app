@@ -3,7 +3,7 @@ set -euo pipefail
 
 SHARED_DIR="/shared"
 ENV_FILE="${SHARED_DIR}/bootstrap.env"
-GRAFANA_URL="http://grafana:3000"
+GRAFANA_URL="http://grafana:3000/proxy/grafana"
 NOCODB_URL="http://nocodb:8080"
 
 # If bootstrap.env exists, verify tokens are still valid
