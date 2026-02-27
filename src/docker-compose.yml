@@ -3,13 +3,15 @@ services:
     build:
       context: .
       dockerfile: postgres/Dockerfile
+    pull_policy: build
     container_name: postgres
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data/:rw
     environment:
       POSTGRES_DB: portal_db
       POSTGRES_USER: portal
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGDATA: /var/lib/postgresql/data/pgdata
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U portal -d portal_db"]
       interval: 10s
@@ -28,6 +30,7 @@ services:
       postgres: { condition: service_healthy }
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana-data:/var/lib/grafana
     environment:
       GF_DATABASE_TYPE: postgres
       GF_DATABASE_HOST: postgres:5432
@@ -36,6 +39,7 @@ services:
       GF_DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
       GF_SECURITY_ALLOW_EMBEDDING: "true"
+      GF_SERVER_SERVE_FROM_SUB_PATH: "true"
       GF_AUTH_ANONYMOUS_ENABLED: "true"
       GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
       GF_SERVER_ROOT_URL: "%(protocol)s://%(domain)s:%(http_port)s/proxy/grafana/"
@@ -55,6 +59,8 @@ services:
     container_name: nocodb
     depends_on:
       postgres: { condition: service_healthy }
+    volumes:
+      - nocodb-data:/usr/app/data
     environment:
       NC_DB_TYPE: pg
       NC_DB_HOST: postgres
@@ -75,7 +81,9 @@ services:
     restart: unless-stopped
 
   bootstrapper:
-    build: ./bootstrap
+    build: 
+      context: ./bootstrap
+    pull_policy: build
     container_name: bootstrapper
     depends_on:
       grafana: { condition: service_healthy }
@@ -92,6 +100,7 @@ services:
     build:
       context: ..
       dockerfile: Dockerfile
+    pull_policy: build
     container_name: portal
     depends_on:
       postgres:     { condition: service_healthy }
@@ -119,7 +128,9 @@ services:
     restart: unless-stopped
 
   portal-init:
-    build: ./bootstrap
+    build: 
+      context: ./bootstrap
+    pull_policy: build
     container_name: portal-init
     entrypoint: ["/portal-init.sh"]
     depends_on:
@@ -131,4 +142,10 @@ services:
 
 volumes:
   pgdata:
+    name: mosaic-pgdata
   shared:
+    name: mosaic-shared
+  grafana-data:
+    name: mosaic-grafana-data
+  nocodb-data:
+    name: mosaic-nocodb-data

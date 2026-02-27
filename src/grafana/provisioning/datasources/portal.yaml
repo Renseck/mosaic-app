@@ -1,5 +1,9 @@
 apiVersion: 1
 
+deleteDatasources:
+  - name: Portal PostgreSQL
+    orgId: 1
+
 datasources:
   - name: Portal PostgreSQL
     type: postgres
@@ -7,14 +11,15 @@ datasources:
     uid: portal-postgres-ds
     url: postgres:5432
     user: portal
-    database: portal_db
+    database: nocodb
     isDefault: true
     jsonData:
       sslmode: disable
+      database: nocodb
       maxOpenConns: 10
       maxIdleConns: 5
       connMaxLifetime: 14400
-      postgresVersion: 1600
+      postgresVersion: 1500
       timescaledb: false
     secureJsonData:
       password: $GF_DATABASE_PASSWORD

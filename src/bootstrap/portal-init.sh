@@ -26,8 +26,17 @@ wait_for() {
 
 wait_for "Portal" "${PORTAL_URL}/api/health"
 
-curl -sf -X POST "${PORTAL_URL}/api/auth/register" \
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${PORTAL_URL}/api/auth/register" \
     -H "Content-Type: application/json" \
-    -d "{\"username\":\"${PORTAL_ADMIN_USERNAME}\",\"password\":\"${PORTAL_ADMIN_PASSWORD}\"}"
+    -d "{\"username\":\"${PORTAL_ADMIN_USERNAME}\",\"password\":\"${PORTAL_ADMIN_PASSWORD}\"}")
+
+if [ "$HTTP_CODE" = "201" ]; then
+    echo "Portal admin user created successfully"
+elif [ "$HTTP_CODE" = "409" ] || [ "$HTTP_CODE" = "403" ]; then
+    echo "Portal admin user already exists — skipping"
+else
+    echo "Unexpected response: HTTP ${HTTP_CODE}"
+    exit 1
+fi
 
 echo "✅ Portal admin user created succesfully"

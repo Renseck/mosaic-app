@@ -3,15 +3,42 @@ set -euo pipefail
 
 SHARED_DIR="/shared"
 ENV_FILE="${SHARED_DIR}/bootstrap.env"
-
-# Skip if already bootstrapped
-if [ -f "${ENV_FILE}" ]; then
-    echo "✅ bootstrap.env already exists — skipping"
-    exit 0
-fi
-
 GRAFANA_URL="http://grafana:3000"
 NOCODB_URL="http://nocodb:8080"
+
+# If bootstrap.env exists, verify tokens are still valid
+if [ -f "${ENV_FILE}" ]; then
+    echo "🔍 bootstrap.env exists — validating tokens..."
+    set -a; . "${ENV_FILE}"; set +a
+
+    GRAFANA_OK=false
+    NOCODB_OK=false
+
+    # Check Grafana token
+    if [ -n "${GRAFANA_SERVICE_ACCOUNT_TOKEN:-}" ]; then
+        HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${GRAFANA_SERVICE_ACCOUNT_TOKEN}" \
+            "${GRAFANA_URL}/api/org")
+        [ "$HTTP_CODE" = "200" ] && GRAFANA_OK=true
+    fi
+
+    # Check NocoDB token
+    if [ -n "${NOCODB_API_TOKEN:-}" ]; then
+        HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "xc-token: ${NOCODB_API_TOKEN}" \
+            "${NOCODB_URL}/api/v1/meta/tables")
+        [ "$HTTP_CODE" = "200" ] && NOCODB_OK=true
+    fi
+
+    if [ "$GRAFANA_OK" = true ] && [ "$NOCODB_OK" = true ]; then
+        echo "✅ Tokens validated — skipping bootstrap"
+        exit 0
+    fi
+
+    echo "⚠️  Stale tokens detected — re-bootstrapping..."
+    rm -f "${ENV_FILE}"
+fi
+
 GRAFANA_ADMIN_USER="admin"
 GRAFANA_ADMIN_PASS="${GF_SECURITY_ADMIN_PASSWORD:-admin}"
 NOCODB_OWNER_EMAIL="${NOCODB_OWNER_EMAIL:-admin@portal.local}"
@@ -37,29 +64,68 @@ wait_for() {
 
 # --------------------------------------------------------------------------- #
 #  Grafana bootstrap                                                           #
+#                                                                              #
+#  The idea is that we'll bounce between two service accounts, cycling between #
+#  two names between launches, and using the latest one to clean the previous. #
 # --------------------------------------------------------------------------- #
 
 wait_for "Grafana" "${GRAFANA_URL}/api/health"
 
-# Create service account
-echo "🔧 Creating Grafana service account..."
-SA_RESPONSE=$(curl -sf -X POST "${GRAFANA_URL}/api/serviceaccounts" \
-    -u "${GRAFANA_ADMIN_USER}:${GRAFANA_ADMIN_PASS}" \
-    -H "Content-Type: application/json" \
-    -d '{"name":"portal-sa","role":"Admin","isDisabled":false}')
+SA_NAMES=("portal-sa-a" "portal-sa-b")
+CREATED_SA=""
+GRAFANA_TOKEN=""
 
-SA_ID=$(echo "$SA_RESPONSE" | jq -r '.id')
-echo "   Service account ID: ${SA_ID}"
 
-# Create token for service account
-echo "🔧 Creating Grafana service account token..."
+# Try to create one of the two service accounts
+for SA_NAME in "${SA_NAMES[@]}"; do
+    echo "🔧 Trying to create Grafana service account '${SA_NAME}'..."
+    SA_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${GRAFANA_URL}/api/serviceaccounts" \
+        -u "${GRAFANA_ADMIN_USER}:${GRAFANA_ADMIN_PASS}" \
+        -H "Content-Type: application/json" \
+        -d "{\"name\":\"${SA_NAME}\",\"role\":\"Admin\",\"isDisabled\":false}")
+
+    if [ "$SA_RESPONSE" = "201" ]; then
+        CREATED_SA="${SA_NAME}"
+        break
+    fi
+    echo "   '${SA_NAME}' already exists, trying next..."
+done
+
+if [ -z "$CREATED_SA" ]; then
+    echo "❌ Could not create either service account"
+    exit 1
+fi
+
+# Get the ID of the just-created SA
+SA_SEARCH=$(curl -sf "${GRAFANA_URL}/api/serviceaccounts/search?query=${CREATED_SA}" \
+    -u "${GRAFANA_ADMIN_USER}:${GRAFANA_ADMIN_PASS}")
+SA_ID=$(echo "$SA_SEARCH" | jq -r ".serviceAccounts[] | select(.name==\"${CREATED_SA}\") | .id")
+
+# Create a token for it
+echo "🔧 Creating token for '${CREATED_SA}'..."
 TOKEN_RESPONSE=$(curl -sf -X POST "${GRAFANA_URL}/api/serviceaccounts/${SA_ID}/tokens" \
     -u "${GRAFANA_ADMIN_USER}:${GRAFANA_ADMIN_PASS}" \
     -H "Content-Type: application/json" \
-    -d '{"name":"portal-token"}')
+    -d "{\"name\":\"portal-token-${CREATED_SA##*-}\"}")
 
 GRAFANA_TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r '.key')
 echo "   Token created successfully"
+
+# Now use the new token to clean up the OTHER service account
+for SA_NAME in "${SA_NAMES[@]}"; do
+    [ "$SA_NAME" = "$CREATED_SA" ] && continue
+
+    echo "🧹 Cleaning up stale service account '${SA_NAME}'..."
+    OLD_SEARCH=$(curl -sf "${GRAFANA_URL}/api/serviceaccounts/search?query=${SA_NAME}" \
+        -H "Authorization: Bearer ${GRAFANA_TOKEN}")
+    OLD_ID=$(echo "$OLD_SEARCH" | jq -r ".serviceAccounts[] | select(.name==\"${SA_NAME}\") | .id")
+
+    if [ -n "$OLD_ID" ] && [ "$OLD_ID" != "null" ]; then
+        curl -sf -X DELETE "${GRAFANA_URL}/api/serviceaccounts/${OLD_ID}" \
+            -H "Authorization: Bearer ${GRAFANA_TOKEN}" || true
+        echo "   Deleted '${SA_NAME}' (ID: ${OLD_ID})"
+    fi
+done
 
 # --------------------------------------------------------------------------- #
 #  NocoDB bootstrap                                                            #

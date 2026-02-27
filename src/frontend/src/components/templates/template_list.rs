@@ -191,7 +191,7 @@ fn template_card(props: &TemplateCardProps) -> Html {
                             </button>
                         }
                         if let Some(ref uid) = t.grafana_dashboard_uid {
-                            <a  href={format!("/d/{uid}")}
+                            <a  href={format!("/proxy/grafana/d/{uid}")}
                                 target="_blank" rel="noopener noreferrer"
                                 class="text-xs text-blue-500 dark:text-blue-400 hover:underline"
                             >

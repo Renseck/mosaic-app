@@ -16,7 +16,7 @@ impl ProxyTarget for GrafanaProxy {
     }
 
     fn prefix(&self) -> &str {
-        "/proxy/grafana"
+        ""  // Don't strip — Grafana serves from /proxy/grafana/ via SERVE_FROM_SUB_PATH
     }
 
     fn inject_auth(&self, builder: reqwest::RequestBuilder) -> reqwest::RequestBuilder {

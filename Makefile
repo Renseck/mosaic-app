@@ -90,7 +90,7 @@ frontend-clean: ## Remove frontend build output
 
 # ============================================ Docker ============================================ #
 docker-up: ## Start the full stack (all services including portal)
-	docker compose -f $(COMPOSE) up -d
+	docker compose -f $(COMPOSE) up -d --build
 
 docker-down: ## Stop and remove all containers
 	docker compose -f $(COMPOSE) down
@@ -100,6 +100,9 @@ docker-services: ## Start supporting services only (postgres, grafana, nocodb)
 
 docker-build: ## Build the portal Docker image
 	docker compose -f $(COMPOSE) build portal
+
+docker-rebuild: ## Rebuild all images from scratch and start
+	docker compose -f ${COMPOSE} up -d --build --force
 
 docker-logs: ## Follow logs from all services
 	docker compose -f $(COMPOSE) logs -f

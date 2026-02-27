@@ -114,51 +114,56 @@ impl Orchestrator {
             is_shared:  Some(false), 
         }).await?;
 
-        // Grafana full-dashboard panel (kiosk mode — no chrome)
-        // Path: /d/{uid}/{slug}?kiosk (strip leading "/d" since we proxy under /proxy/grafana)
-        // let grafana_proxy_url = format!("/proxy/grafana{}?kiosk", grafana_url);
-        // panel_repo.create(dashboard.id, CreatePanel { 
-        //     title: Some(format!("{} - Charts", template.name)), 
-        //     panel_type: "grafana_dashboard".to_string(), 
-        //     source_url: Some(grafana_proxy_url), 
-        //     config:     None, 
-        //     grid_x:     0, 
-        //     grid_y:     0, 
-        //     grid_w:     Some(12), 
-        //     grid_h:     Some(8), 
-        // }).await?;
-
+        
         // Individual Grafana panel embeds (one per numeric field)
         let grafana_slug = grafana_url
             .rsplit('/')
             .next()
             .unwrap_or("dashboard");
 
-        let empty_vec = Vec::new();
-        let numeric_fields: Vec<_> = template.fields.as_array()
-            .unwrap_or(&empty_vec)
-            .iter()
-            .filter(|f| f.get("field_type").and_then(|v| v.as_str()) == Some("number"))
-            .collect();
+        // Grafana full-dashboard panel (kiosk mode — no chrome)
+        // Path: /d/{uid}/{slug}?kiosk (strip leading "/d" since we proxy under /proxy/grafana)
+        let grafana_proxy_url = format!(
+            "/proxy/grafana/d/{grafana_uid}/{grafana_slug}?kiosk"
+        );
 
-        for (i, _field) in numeric_fields.iter().enumerate()
-        {
-            let panel_url = format!(
-                "/proxy/grafana/d/{grafana_uid}/{grafana_slug}?viewPanel=panel-{}",
-                i + 1
-            );
-            panel_repo.create(dashboard.id, CreatePanel {
-                title:      Some(format!("{} - Panel {}", template.name, i + 1)),
-                panel_type: "grafana_panel".to_string(),
-                source_url: Some(panel_url),
-                config:     None,
-                grid_x:     0,
-                grid_y:     (i as i32) * 8,
-                grid_w:     Some(12),
-                grid_h:     Some(8),
-            }).await?;
-        }
+        panel_repo.create(dashboard.id, CreatePanel { 
+            title: Some(format!("{} - Charts", template.name)), 
+            panel_type: "grafana_dashboard".to_string(), 
+            source_url: Some(grafana_proxy_url), 
+            config:     None, 
+            grid_x:     0, 
+            grid_y:     0, 
+            grid_w:     Some(12), 
+            grid_h:     Some(14), 
+        }).await?;
 
+        // let empty_vec = Vec::new();
+        // let numeric_fields: Vec<_> = template.fields.as_array()
+        //     .unwrap_or(&empty_vec)
+        //     .iter()
+        //     .filter(|f| f.get("field_type").and_then(|v| v.as_str()) == Some("number"))
+        //     .collect();
+
+        // for (i, _field) in numeric_fields.iter().enumerate()
+        // {
+        //     let panel_url = format!(
+        //         "/proxy/grafana/d/{grafana_uid}/{grafana_slug}?viewPanel=panel-{}",
+        //         i + 1
+        //     );
+        //     panel_repo.create(dashboard.id, CreatePanel {
+        //         title:      Some(format!("{} - Panel {}", template.name, i + 1)),
+        //         panel_type: "grafana_panel".to_string(),
+        //         source_url: Some(panel_url),
+        //         config:     None,
+        //         grid_x:     0,
+        //         grid_y:     (i as i32) * 8,
+        //         grid_w:     Some(12),
+        //         grid_h:     Some(8),
+        //     }).await?;
+        // }
+
+        // TODO: Dead code - remove
         // NocoDB data-entry form panel
         // let nocodb_form_url = format!("/proxy/nocodb/dashboard/#/nc/form/{}", nocodb_form_uuid);
         // panel_repo.create(dashboard.id, CreatePanel {
