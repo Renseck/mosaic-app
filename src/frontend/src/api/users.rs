@@ -43,3 +43,18 @@ pub async fn create_user(
     )
     .await
 }
+
+/* ============================================================================================== */
+#[derive(Serialize)]
+struct ResetPasswordBody<'a> {
+    new_password: &'a str,
+}
+
+/// PUT /api/users/:id/password — admin resets a user's password.
+pub async fn reset_user_password(id: &str, new_password: &str) -> Result<(), ApiError> {
+    client::put_json_empty(
+        &format!("/api/users/{id}/password"),
+        &ResetPasswordBody { new_password },
+    )
+    .await
+}

@@ -59,6 +59,29 @@ pub fn admin_users_page() -> Html {
         })
     };
 
+    // ── Password reset callback ───────────────────────────────────────────
+    let on_reset_password = {
+        let show_toast = show_toast.clone();
+        Callback::from(move |id: String| {
+            let show_toast = show_toast.clone();
+            let temp_pw = generate_temp_password(12);
+            let temp_pw_display = temp_pw.clone();
+            wasm_bindgen_futures::spawn_local(async move {
+                match users::reset_user_password(&id, &temp_pw).await {
+                    Ok(_) => {
+                        show_toast.emit((
+                            format!("Password reset to: {temp_pw_display}"),
+                            ToastKind::Success,
+                        ));
+                    }
+                    Err(e) => {
+                        show_toast.emit((format!("Failed: {e}"), ToastKind::Error));
+                    }
+                }
+            });
+        })
+    };
+
     // ── Create user callback ────────────────────────────────────────────────
     let on_create = {
         let new_username = new_username.clone();
@@ -147,8 +170,15 @@ pub fn admin_users_page() -> Html {
                                         on_role_change.emit((id.clone(), role));
                                     })
                                 };
+                                let on_reset = {
+                                    let on_reset_password = on_reset_password.clone();
+                                    let id = u.id.clone();
+                                    Callback::from(move |_: ()| {
+                                        on_reset_password.emit(id.clone());
+                                    })
+                                };
                                 html! {
-                                    <UserRow key={u.id.clone()} user={u.clone()} on_role_change={on_role} />
+                                    <UserRow key={u.id.clone()} user={u.clone()} on_role_change={on_role} on_reset_password={on_reset} />
                                 }
                             })}
                         </tbody>
@@ -240,15 +270,41 @@ pub fn admin_users_page() -> Html {
 struct UserRowProps {
     user: User,
     on_role_change: Callback<String>,
+    on_reset_password: Callback<()>,
 }
 
 #[function_component(UserRow)]
 fn user_row(props: &UserRowProps) -> Html {
+    let confirming = use_state(|| false);
+
     let on_change = {
         let cb = props.on_role_change.clone();
         Callback::from(move |e: web_sys::Event| {
             let target: web_sys::HtmlSelectElement = e.target_unchecked_into();
             cb.emit(target.value());
+        })
+    };
+
+    let on_reset_click = {
+        let confirming = confirming.clone();
+        Callback::from(move |_: MouseEvent| {
+            confirming.set(true);
+        })
+    };
+
+    let on_confirm = {
+        let confirming = confirming.clone();
+        let cb = props.on_reset_password.clone();
+        Callback::from(move |_: MouseEvent| {
+            confirming.set(false);
+            cb.emit(());
+        })
+    };
+
+    let on_cancel = {
+        let confirming = confirming.clone();
+        Callback::from(move |_: MouseEvent| {
+            confirming.set(false);
         })
     };
 
@@ -270,6 +326,40 @@ fn user_row(props: &UserRowProps) -> Html {
                     <option value="viewer" selected={props.user.role.to_string() == "viewer"}> { "Viewer" } </option>
                 </select>
             </td>
+            <td class="px-6 py-3">
+                if *confirming {
+                    <span class="inline-flex items-center gap-2">
+                        <span class="text-xs text-red-500">{"Sure?"}</span>
+                        <button onclick={on_confirm}
+                            class="text-xs font-medium text-red-600 hover:text-red-500 transition-colors">
+                            {"Yes"}
+                        </button>
+                        <button onclick={on_cancel}
+                            class="text-xs text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors">
+                            {"No"}
+                        </button>
+                    </span>
+                } else {
+                    <button onclick={on_reset_click}
+                        title="Reset password to Welcome1234!"
+                        class="text-xs text-stone-400 hover:text-amber-600 dark:hover:text-amber-300 transition-colors">
+                        {"Reset pw"}
+                    </button>
+                }
+            </td>
         </tr>
     }
+}
+
+/* ============================================================================================== */
+/*                                             Helpers                                            */
+/* ============================================================================================== */
+
+fn generate_temp_password(len: usize) -> String {
+    let charset = b"ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$";
+    let mut buf = vec![0u8; len];
+    getrandom::fill(&mut buf).expect("getrandom failed");
+    buf.iter()
+        .map(|b| charset[*b as usize % charset.len()] as char)
+        .collect()
 }

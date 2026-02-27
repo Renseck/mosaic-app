@@ -104,11 +104,12 @@ fn panel_routes() -> Router<AppState> {
 
 /* ============================================================================================== */
 fn user_routes() -> Router<AppState> {
-    use crate::api::users::{list_users, update_user_role};
+    use crate::api::users::{list_users, update_user_role, reset_user_password};
 
     Router::new()
         .route("/", get(list_users))
         .route("/{id}/role", put(update_user_role))
+        .route("/{id}/password", put(reset_user_password))
 }
 
 /* ============================================================================================== */
