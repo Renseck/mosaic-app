@@ -1,9 +1,11 @@
+use std::ops::Sub;
+
 use yew::prelude::*;
 use yew_router::prelude::*;
 
 use crate::api::dashboards;
 use crate::hooks::use_api::use_api;
-use crate::models::dashboard::{CreateDashboard, Dashboard};
+use crate::models::dashboard::{CreateDashboard, Dashboard, UpdateDashboard};
 use crate::router::Route;
 
 #[function_component(DashboardListPage)]
@@ -126,6 +128,7 @@ pub fn dashboard_list_page() -> Html {
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         { for dashboards.iter().map(|d| {
                             let reload = reload.clone();
+
                             let on_delete = {
                                 let id = d.id.clone();
                                 let reload = reload.clone();
@@ -138,8 +141,24 @@ pub fn dashboard_list_page() -> Html {
                                     });
                                 })
                             };
+
+                            let on_rename = {
+                            let reload = reload.clone();
+                            Callback::from(move |(id, title): (String, String)| {
+                                let reload = reload.clone();
+                                wasm_bindgen_futures::spawn_local(async move {
+                                    let _ = dashboards::update_dashboard(&id, &UpdateDashboard {
+                                        title: Some(title),
+                                        icon: None,
+                                        is_shared: None,
+                                    }).await;
+                                    reload.emit(());
+                                });
+                            })
+                        };
+
                             html! {
-                                <DashboardCard dashboard={d.clone()} {on_delete} />
+                                <DashboardCard dashboard={d.clone()} {on_delete} {on_rename}/>
                             }
                         })}
                     </div>
@@ -156,12 +175,15 @@ pub fn dashboard_list_page() -> Html {
 #[derive(Properties, PartialEq)]
 struct DashboardCardProps {
     dashboard: Dashboard,
+    on_rename: Callback<(String, String)>, // (id, new_title)
     on_delete: Callback<()>,
 }
 
 #[function_component(DashboardCard)]
 fn dashboard_card(props: &DashboardCardProps) -> Html {
     let d = &props.dashboard;
+    let editing = use_state(|| false);
+    let edit_title = use_state(|| d.title.clone());
 
     let on_delete_click = {
         let on_delete = props.on_delete.clone();
@@ -169,6 +191,62 @@ fn dashboard_card(props: &DashboardCardProps) -> Html {
             e.prevent_default();
             e.stop_propagation();
             on_delete.emit(());
+        })
+    };
+
+    let on_edit_click = {
+        let editing = editing.clone();
+        let edit_title = edit_title.clone();
+        let title = d.title.clone();
+        Callback::from(move |e: MouseEvent| {
+            e.prevent_default();
+            e.stop_propagation();
+            edit_title.set(title.clone());
+            editing.set(true);
+        })
+    };
+
+    let on_edit_input = {
+        let edit_title = edit_title.clone();
+        Callback::from(move |e: InputEvent| {
+            let el: web_sys::HtmlInputElement = e.target_unchecked_into();
+            edit_title.set(el.value());
+        })
+    };
+
+    let on_edit_submit = {
+        let editing = editing.clone();
+        let edit_title = edit_title.clone();
+        let on_rename = props.on_rename.clone();
+        let id = d.id.clone();
+        Callback::from(move |e: SubmitEvent| {
+            e.prevent_default();
+            e.stop_propagation();
+            let title = (*edit_title).trim().to_string();
+            if !title.is_empty() {
+                on_rename.emit((id.clone(), title));
+            }
+            editing.set(false);
+        })
+    };
+
+    let on_edit_cancel = {
+        let editing = editing.clone();
+        Callback::from(move |e: MouseEvent| {
+            e.prevent_default();
+            e.stop_propagation();
+            editing.set(false);
+        })
+    };
+
+    let on_edit_keydown = {
+        let editing = editing.clone();
+        Callback::from(move |e: KeyboardEvent| {
+            if e.key() == "Escape" {
+                e.prevent_default();
+                e.stop_propagation();
+                editing.set(false);
+            }
         })
     };
 
@@ -183,27 +261,71 @@ fn dashboard_card(props: &DashboardCardProps) -> Html {
                             text-amber-700 dark:text-amber-200 text-base shrink-0">
                     { d.icon.as_deref().unwrap_or("▦") }
                 </div>
-                <div class="min-w-0">
-                    <p class="text-sm font-semibold text-stone-900 dark:text-stone-100 group-hover:text-amber-700 dark:group-hover:text-amber-200
-                               transition-colors truncate">
-                        { &d.title }
-                    </p>
-                    <p class="text-xs text-stone-400 dark:text-stone-500 mt-0.5 truncate">
-                        { format!("/{}", d.slug) }
-                    </p>
+                <div class="min-w-0 flex-1">
+                    if *editing {
+                        <form onsubmit={on_edit_submit}
+                              onclick={Callback::from(|e: MouseEvent| e.stop_propagation())}
+                              class="flex items-center gap-2">
+                            <input
+                                type="text"
+                                autofocus=true
+                                value={(*edit_title).clone()}
+                                oninput={on_edit_input}
+                                onkeydown={on_edit_keydown}
+                                class="flex-1 rounded-md bg-white dark:bg-stone-700
+                                       border border-stone-300 dark:border-stone-600
+                                       px-2 py-1 text-sm text-slate-900 dark:text-slate-100
+                                       focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400 focus:border-transparent"
+                            />
+                            <button type="submit"
+                                class="px-2 py-1 text-xs font-semibold bg-amber-500 text-stone-900
+                                       rounded-md hover:bg-amber-400 transition-colors">
+                                {"Save"}
+                            </button>
+                            <button type="button" onclick={on_edit_cancel}
+                                class="px-2 py-1 text-xs text-stone-500 dark:text-stone-400
+                                       hover:text-stone-700 dark:hover:text-stone-200 transition-colors">
+                                {"Cancel"}
+                            </button>
+                        </form>
+                    } else {
+                        <p class="text-sm font-semibold text-stone-900 dark:text-stone-100 group-hover:text-amber-700 dark:group-hover:text-amber-200
+                                   transition-colors truncate">
+                            { &d.title }
+                        </p>
+                        <p class="text-xs text-stone-400 dark:text-stone-500 mt-0.5 truncate">
+                            { format!("/{}", d.slug) }
+                        </p>
+                    }
                 </div>
-                <button
-                    onclick={on_delete_click}
-                    title="Delete dashboard"
-                    class="opacity-0 group-hover:opacity-100 p-1.5 rounded-md
-                           text-stone-400 hover:text-red-500 hover:bg-red-50
-                           dark:text-stone-500 dark:hover:text-red-400 dark:hover:bg-red-900/30
-                           transition-all shrink-0"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                    </svg>
-                </button>
+                if !*editing {
+                    // Edit button
+                    <button
+                        onclick={on_edit_click}
+                        title="Rename dashboard"
+                        class="opacity-0 group-hover:opacity-100 p-1.5 rounded-md
+                               text-stone-400 hover:text-amber-600 hover:bg-amber-50
+                               dark:text-stone-500 dark:hover:text-amber-300 dark:hover:bg-amber-900/30
+                               transition-all shrink-0"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                        </svg>
+                    </button>
+                    // Delete button
+                    <button
+                        onclick={on_delete_click}
+                        title="Delete dashboard"
+                        class="opacity-0 group-hover:opacity-100 p-1.5 rounded-md
+                               text-stone-400 hover:text-red-500 hover:bg-red-50
+                               dark:text-stone-500 dark:hover:text-red-400 dark:hover:bg-red-900/30
+                               transition-all shrink-0"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                }
             </div>
             if d.is_shared {
                 <span class="mt-3 inline-block text-xs text-amber-600 dark:text-amber-300 font-medium">{"Shared"}</span>

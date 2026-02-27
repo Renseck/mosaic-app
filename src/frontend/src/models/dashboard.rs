@@ -48,6 +48,16 @@ pub struct CreateDashboard {
 }
 
 #[derive(Debug, Serialize)]
+pub struct UpdateDashboard {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub icon: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub is_shared: Option<bool>,
+}
+
+#[derive(Debug, Serialize)]
 pub struct CreatePanel {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub title:      Option<String>,

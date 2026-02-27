@@ -1,6 +1,6 @@
 use crate::models::dashboard::{
     BatchPositionUpdate, CreateDashboard, CreatePanel,
-    Dashboard, DashboardWithPanels, Panel,
+    Dashboard, DashboardWithPanels, Panel, UpdateDashboard,
 };
 use super::client::{self, ApiError};
 
@@ -16,6 +16,11 @@ pub async fn get_dashboard(slug: &str) -> Result<DashboardWithPanels, ApiError> 
 /* ============================================================================================== */
 pub async fn create_dashboard(input: &CreateDashboard) -> Result<Dashboard, ApiError> {
     client::post_json("/api/dashboards", input).await
+}
+
+/* ============================================================================================== */
+pub async fn update_dashboard(id: &str, input: &UpdateDashboard) -> Result<Dashboard, ApiError> {
+    client::put_json(&format!("/api/dashboards/{id}"), input).await
 }
 
 /* ============================================================================================== */
