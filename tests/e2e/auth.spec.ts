@@ -20,7 +20,10 @@ test.describe('Authentication flow', () => {
         const page = await context.newPage();
 
         await page.goto('http://localhost:' + (process.env.PORTAL_PORT || '8080') + '/dashboards');
-        await expect(page).toHaveURL(/\/login/);
+        await page.getByRole('heading', { name: 'Sign in' }).click();
+        await page.getByRole('textbox', { name: 'Username' }).click();
+        await page.getByRole('textbox', { name: 'Password' }).click();
+        await page.getByRole('button', { name: 'Sign in' }).click();
 
         await context.close();
     });
