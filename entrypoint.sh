@@ -11,18 +11,24 @@ if [ -f "$BOOTSTRAP_ENV" ]; then
     set +a
 fi
 
-# Wait for Postgres to be reachable (DNS + TCP)
+# Wait for Postgres to be reachable (DNS resolution + TCP connect)
 echo "⏳ Waiting for Postgres..."
 MAX_RETRIES=30
 RETRY=0
-while ! nc -z postgres 5432 2>/dev/null; do
-    RETRY=$((RETRY + 1))
-    if [ "$RETRY" -ge "$MAX_RETRIES" ]; then
-        echo "❌ Postgres not reachable after ${MAX_RETRIES} attempts, starting anyway..."
+while true; do
+    if nc -z -w2 postgres 5432 2>/dev/null; then
+        echo "✅ Postgres is reachable"
         break
     fi
-    sleep 1
+ 
+    RETRY=$((RETRY + 1))
+    if [ "$RETRY" -ge "$MAX_RETRIES" ]; then
+        echo "❌ Postgres not reachable after ${MAX_RETRIES} attempts"
+        exit 1
+    fi
+ 
+    echo "   Attempt ${RETRY}/${MAX_RETRIES} — retrying in 2s..."
+    sleep 2
 done
-echo "✅ Postgres is reachable"
-
+ 
 exec mosaic-app
