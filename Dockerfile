@@ -36,7 +36,7 @@ RUN cargo build --release --target x86_64-unknown-linux-musl
 # ── Stage 3: Minimal runtime image ───────────────────────────────────────────
 FROM alpine:latest
 
-RUN apk add --no-cache ca-certificates
+RUN apk add --no-cache ca-certificates netcat-openbsd
 
 WORKDIR /app
 
