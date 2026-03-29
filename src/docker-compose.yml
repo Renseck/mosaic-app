@@ -55,7 +55,7 @@ services:
     restart: unless-stopped
 
   nocodb:
-    image: nocodb/nocodb:latest
+    image: nocodb/nocodb:0.301.2
     container_name: nocodb
     depends_on:
       postgres: { condition: service_healthy }
