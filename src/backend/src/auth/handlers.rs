@@ -42,7 +42,7 @@ pub struct UserResponse {
 fn build_session_cookie(token: &str, ttl_hours: u64) -> HeaderValue {
     let max_age = ttl_hours * 3600;
     HeaderValue::from_str(&format!(
-        "portal_session={token}; HttpOnly; SameSite=Lax; Max-Age={max_age}; Path=/"
+        "portal_session={token}; HttpOnly; SameSite=Strict; Max-Age={max_age}; Path=/"
     ))
     .expect("cookie string is always valid ASCII")
 }
