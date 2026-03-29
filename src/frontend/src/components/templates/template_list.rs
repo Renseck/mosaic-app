@@ -260,7 +260,7 @@ struct FormModalProps {
 
 #[function_component(FormModal)]
 fn form_modal(props: &FormModalProps) -> Html {
-    let src = format!("/proxy/nocodb/nc/form/{}", props.share_uuid);
+    let src = format!("/proxy/nocodb/dashboard/#/nc/form/{}", props.share_uuid);
 
     html! {
         <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
