@@ -76,6 +76,7 @@ pub trait PanelRepo: Send + Sync {
     async fn update_position(&self, id: Uuid, pos: GridPosition) -> Result<Panel, AppError>;
     async fn batch_update_positions(&self, updates: Vec<BatchPositionUpdate>) -> Result<(), AppError>;
     async fn delete(&self, id: Uuid) -> Result<(), AppError>;
+    async fn update_source_url_prefix(&self, old_prefix: &str, new_prefix: &str) -> Result<u64, AppError>;
 }
 
 /* ============================================================================================== */
@@ -248,5 +249,26 @@ impl PanelRepo for PgPanelRepo {
             return Err(AppError::NotFound(format!("panel '{id}' not found")));
         }
         Ok(())
+    }
+
+    async fn update_source_url_prefix(
+        &self,
+        old_prefix: &str,
+        new_prefix: &str,
+    ) -> Result<u64, AppError> {
+        let result = sqlx::query!(
+            r#"
+            UPDATE portal.panels
+            SET source_url = $2 || substring(source_url from length($1) + 1),
+                updated_at = now()
+            WHERE source_url LIKE $1 || '%'
+            "#,
+            old_prefix,
+            new_prefix,
+        )
+        .execute(&self.pool)
+        .await?;
+
+        Ok(result.rows_affected())
     }
 }
