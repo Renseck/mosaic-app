@@ -114,6 +114,7 @@ pub fn template_list() -> Html {
                                 <TemplateCard
                                     template={t.clone()}
                                     is_admin={is_admin}
+                                    is_owner={t.created_by.as_deref() == auth.user.as_ref().map(|u| u.id.as_str())}
                                     on_delete={on_delete}
                                     on_open_form={on_open_form}
                                     on_reprovision={on_reprovision}
@@ -146,6 +147,7 @@ pub fn template_list() -> Html {
 struct TemplateCardProps {
     template:       DatasetTemplate,
     is_admin:       bool,
+    is_owner:       bool,
     on_delete:      Callback<()>,
     on_open_form:   Callback<String>,
     on_reprovision: Callback<()>,
@@ -245,43 +247,45 @@ fn template_card(props: &TemplateCardProps) -> Html {
                             {"⟳ Re-provision"}
                         </button>
 
-                        // Delete button (existing code)
-                        if *confirm_delete {
-                            <div class="flex items-center gap-2 text-xs">
-                                <span class="text-stone-500 dark:text-stone-400">{"Delete?"}</span>
-                                <button
-                                    onclick={Callback::from({
-                                        let on_delete = props.on_delete.clone();
-                                        move |_: MouseEvent| on_delete.emit(())
-                                    })}
-                                    class="text-red-600 dark:text-red-400 font-semibold hover:underline"
-                                >
-                                    {"Yes"}
-                                </button>
+                        // Delete — owner or admin
+                        if props.is_owner || props.is_admin {
+                            if *confirm_delete {
+                                <div class="flex items-center gap-2 text-xs">
+                                    <span class="text-stone-500 dark:text-stone-400">{"Delete?"}</span>
+                                    <button
+                                        onclick={Callback::from({
+                                            let on_delete = props.on_delete.clone();
+                                            move |_: MouseEvent| on_delete.emit(())
+                                        })}
+                                        class="text-red-600 dark:text-red-400 font-semibold hover:underline"
+                                    >
+                                        {"Yes"}
+                                    </button>
+                                    <button
+                                        onclick={Callback::from({
+                                            let confirm = confirm_delete.clone();
+                                            move |_: MouseEvent| confirm.set(false)
+                                        })}
+                                        class="text-stone-400 dark:text-stone-500
+                                            hover:text-stone-600 dark:hover:text-stone-300"
+                                    >
+                                        {"Cancel"}
+                                    </button>
+                                </div>
+                            } else {
                                 <button
                                     onclick={Callback::from({
                                         let confirm = confirm_delete.clone();
-                                        move |_: MouseEvent| confirm.set(false)
+                                        move |_: MouseEvent| confirm.set(true)
                                     })}
-                                    class="text-stone-400 dark:text-stone-500
-                                           hover:text-stone-600 dark:hover:text-stone-300"
+                                    title="Delete template"
+                                    class="text-stone-300 dark:text-stone-600
+                                        hover:text-red-500 dark:hover:text-red-400
+                                        transition-colors text-sm"
                                 >
-                                    {"Cancel"}
+                                    {"✕"}
                                 </button>
-                            </div>
-                        } else {
-                            <button
-                                onclick={Callback::from({
-                                    let confirm = confirm_delete.clone();
-                                    move |_: MouseEvent| confirm.set(true)
-                                })}
-                                title="Delete template"
-                                class="text-stone-300 dark:text-stone-600
-                                       hover:text-red-500 dark:hover:text-red-400
-                                       transition-colors text-sm"
-                            >
-                                {"✕"}
-                            </button>
+                            }
                         }
                     </div>
                 }

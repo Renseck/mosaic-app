@@ -16,6 +16,7 @@ pub struct DatasetTemplate {
     pub nocodb_form_id:        Option<String>,
     pub grafana_dashboard_uid: Option<String>,
     pub fields:                serde_json::Value,
+    pub created_by:            Option<String>,
     pub created_at:            String,
 }
 
