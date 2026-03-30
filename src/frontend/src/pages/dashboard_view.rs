@@ -5,7 +5,7 @@ use crate::api::dashboards;
 use crate::components::grid::DashboardGrid;
 use crate::components::panels::PanelPicker;
 use crate::hooks::use_api::use_api;
-use crate::models::dashboard::{BatchPositionUpdate, CreatePanel, Panel};
+use crate::models::dashboard::{BatchPositionUpdate, CreatePanel, Panel, UpdateDashboard};
 use crate::router::Route;
 
 #[derive(Properties, PartialEq)]
@@ -23,6 +23,28 @@ pub fn dashboard_view_page(props: &DashboardViewProps) -> Html {
 
     let edit_mode   = use_state(|| false);
     let show_picker = use_state(|| false);
+
+    let auth = use_context::<crate::context::auth_context::AuthContext>()
+        .expect("AuthContext missing");
+
+    let dashboard_id = state.data.as_ref()
+        .map(|d| d.dashboard.id.clone())
+        .unwrap_or_default();
+
+    let is_shared = state.data.as_ref()
+        .map(|d| d.dashboard.is_shared)
+        .unwrap_or(false);
+
+    let is_owner_or_admin = state.data.as_ref()
+        .map(|d| {
+            let is_owner = d.dashboard.owner_id.as_deref()
+                == auth.user.as_ref().map(|u| u.id.as_str());
+            let is_admin = auth.user.as_ref()
+                .map(|u| u.role.is_admin())
+                .unwrap_or(false);
+            is_owner || is_admin
+        })
+        .unwrap_or(false);
 
     /* ====== Position batch update after drag/resize ====== */
     let on_positions_change = {
@@ -150,6 +172,45 @@ pub fn dashboard_view_page(props: &DashboardViewProps) -> Html {
                     >
                         { if *edit_mode { "Done" } else { "Edit Layout" } }
                     </button>
+                    
+                    // Share toggle — only for owner or admin
+                    if is_owner_or_admin {
+                        <button
+                            onclick={Callback::from({
+                                let dashboard_id = dashboard_id.clone();
+                                let is_shared = is_shared;
+                                let reload = reload.clone();
+                                move |_| {
+                                    let dashboard_id = dashboard_id.clone();
+                                    let reload = reload.clone();
+                                    wasm_bindgen_futures::spawn_local(async move {
+                                        let _ = dashboards::update_dashboard(
+                                            &dashboard_id,
+                                            &UpdateDashboard {
+                                                title: None,
+                                                icon: None,
+                                                is_shared: Some(!is_shared),
+                                            },
+                                        ).await;
+                                        reload.emit(());
+                                    });
+                                }
+                            })}
+                            class={if is_shared {
+                                "px-3 py-1.5 text-xs font-semibold rounded-md border-2 \
+                                border-emerald-500 text-emerald-700 dark:text-emerald-400 \
+                                bg-emerald-50 dark:bg-emerald-900/20 transition-colors"
+                            } else {
+                                "px-3 py-1.5 text-xs font-semibold rounded-md border \
+                                border-stone-300 dark:border-stone-600 \
+                                text-stone-600 dark:text-stone-400 \
+                                hover:border-stone-400 bg-white dark:bg-stone-800 \
+                                transition-colors"
+                            }}
+                        >
+                            { if is_shared { "Shared ✓" } else { "Share" } }
+                        </button>
+                    }
                 </div>
             </div>
 
