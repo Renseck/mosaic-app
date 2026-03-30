@@ -45,6 +45,14 @@ pub struct CreateTemplateRecord {
 
 }
 
+/// Used by the re-provisioner to update external resource IDS on an existing template.
+#[derive(Debug)]
+pub struct UpdateExternalIds {
+    pub nocodb_table_id:        Option<String>,
+    pub nocodb_form_id:         Option<String>,
+    pub grafana_dashboard_uid:  Option<String>,
+}
+
 /* ============================================================================================== */
 /*                                        Repository trait                                        */
 /* ============================================================================================== */
@@ -55,6 +63,7 @@ pub trait TemplateRepo: Send + Sync {
     async fn get_by_id(&self, id: Uuid) -> Result<Template, AppError>;
     async fn create(&self, record: CreateTemplateRecord) -> Result<Template, AppError>;
     async fn delete(&self, id: Uuid) -> Result<(), AppError>;
+    async fn update_external_ids(&self, id: Uuid, ids: UpdateExternalIds) -> Result<Template, AppError>;
 }
 
 /* ============================================================================================== */
@@ -153,5 +162,29 @@ impl TemplateRepo for PgTemplateRepo {
             return Err(AppError::NotFound(format!("template '{id}' not found")))
         }
         Ok(())
+    }
+
+    async fn update_external_ids(&self, id: Uuid, ids: UpdateExternalIds) -> Result<Template, AppError> {
+        sqlx::query!(
+            r#"
+            UPDATE portal.dataset_templates
+            SET nocodb_table_id       = $2,
+                nocodb_form_id        = $3,
+                grafana_dashboard_uid = $4,
+                updated_at            = now()
+            WHERE id = $1
+            RETURNING id, name, description, nocodb_table_id, nocodb_form_id,
+                    grafana_dashboard_uid, fields as "fields!: JsonValue",
+                    created_by, created_at, updated_at
+            "#,
+            id,
+            ids.nocodb_table_id,
+            ids.nocodb_form_id,
+            ids.grafana_dashboard_uid,
+        )
+        .fetch_optional(&self.pool)
+        .await?
+        .map(|r| map_template!(r))
+        .ok_or_else(|| AppError::NotFound(format!("template '{id}' not found")))
     }
 }

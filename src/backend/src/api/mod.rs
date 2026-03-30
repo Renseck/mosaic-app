@@ -14,7 +14,7 @@ use std::time::Duration;
 use tower_http::trace::TraceLayer;
 use tracing::{Level, Span};
 
-use crate::AppState;
+use crate::{AppState, api::templates::reprovision_template};
 
 pub fn router(state: AppState) -> Router {
     Router::new()
@@ -118,6 +118,7 @@ fn template_routes() -> Router<AppState> {
     Router::new()
         .route("/", get(list_templates).post(create_template))
         .route("/{id}", get(get_template).delete(delete_template))
+        .route("/{id}/reprovision", axum::routing::post(reprovision_template))
 }
 
 /* ============================================================================================== */

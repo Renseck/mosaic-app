@@ -100,3 +100,20 @@ pub async fn delete_template(
     state.templates.delete(id).await?;
     Ok(StatusCode::NO_CONTENT)
 }
+
+/* ============================================================================================== */
+/// POST /api/templates/:id/reprovision - re-creates external resources from stored fields
+pub async fn reprovision_template(
+    State(state): State<AppState>,
+    user: AuthenticatedUser,
+    Path(id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    if user.role != crate::auth::middleware::Role::Admin {
+        return Err(AppError::Forbidden);
+    }
+
+    let template = state.templates.get_by_id(id).await?;
+    let updated = state.orchestrator.reprovision_dataset(&template).await?;
+
+    Ok(Json(updated))
+}

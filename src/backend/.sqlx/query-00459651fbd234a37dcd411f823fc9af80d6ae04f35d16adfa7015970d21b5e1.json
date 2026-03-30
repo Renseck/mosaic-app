@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE portal.panels\n            SET source_url = $2 || substring(source_url from length($1) + 1),\n                updated_at = now()\n            WHERE source_url LIKE $1 || '%'\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "00459651fbd234a37dcd411f823fc9af80d6ae04f35d16adfa7015970d21b5e1"
+}

@@ -3,6 +3,7 @@ use yew_router::prelude::*;
 
 use crate::api::templates;
 use crate::context::auth_context::AuthContext;
+use crate::components::common::{use_toast, ToastKind};
 use crate::hooks::use_api::use_api;
 use crate::models::template::DatasetTemplate;
 use crate::models::user::Role;
@@ -19,6 +20,7 @@ pub fn template_list() -> Html {
     let (state, reload) = use_api(|| templates::list_templates());
 
     let form_modal: UseStateHandle<Option<String>> = use_state(|| None);
+    let show_toast = use_toast();
 
     html! {
         <div class="max-w-5xl mx-auto">
@@ -68,29 +70,53 @@ pub fn template_list() -> Html {
                 } else {
                     <div class="space-y-3">
                         { for templates_list.iter().map(|t| {
-                            let reload   = reload.clone();
-                            let t_id     = t.id.clone();
+                            let t_id = t.id.clone();
                             let form_modal = form_modal.clone();
+
+                            let reload_for_delete = reload.clone();
                             let on_delete = Callback::from(move |()| {
-                                let reload = reload.clone();
-                                let id     = t_id.clone();
+                                let reload = reload_for_delete.clone();
+                                let id = t_id.clone();
                                 wasm_bindgen_futures::spawn_local(async move {
                                     let _ = templates::delete_template(&id).await;
                                     reload.emit(());
                                 });
                             });
+
                             let on_open_form = {
                                 let form_modal = form_modal.clone();
                                 Callback::from(move |uuid: String| {
                                     form_modal.set(Some(uuid));
                                 })
                             };
+
+                            let reload_for_reprovision = reload.clone();
+                            let t_id_for_reprovision = t.id.clone();
+                            let show_toast_for_reprovision = show_toast.clone();
+                            let on_reprovision = Callback::from(move |()| {
+                                let reload = reload_for_reprovision.clone();
+                                let id = t_id_for_reprovision.clone();
+                                let show_toast = show_toast_for_reprovision.clone();
+                                wasm_bindgen_futures::spawn_local(async move {
+                                    match templates::reprovision_template(&id).await {
+                                        Ok(_) => {
+                                            show_toast.emit(("Re-provisioned successfully".to_string(), ToastKind::Success));
+                                            reload.emit(());
+                                        }
+                                        Err(e) => {
+                                            show_toast.emit((format!("Re-provision failed: {e}"), ToastKind::Error));
+                                        }
+                                    }
+                                });
+                            });
+
                             html! {
                                 <TemplateCard
                                     template={t.clone()}
                                     is_admin={is_admin}
                                     on_delete={on_delete}
                                     on_open_form={on_open_form}
+                                    on_reprovision={on_reprovision}
                                 />
                             }
                         })}
@@ -122,6 +148,7 @@ struct TemplateCardProps {
     is_admin:       bool,
     on_delete:      Callback<()>,
     on_open_form:   Callback<String>,
+    on_reprovision: Callback<()>,
 }
 
 #[function_component(TemplateCard)]
@@ -204,6 +231,21 @@ fn template_card(props: &TemplateCardProps) -> Html {
                 /* ================================ Admin actions =============================== */
                 if props.is_admin {
                     <div class="shrink-0 flex items-center">
+                        // Re-provision button
+                        <button
+                            onclick={Callback::from({
+                                let on_reprovision = props.on_reprovision.clone();
+                                move |_: MouseEvent| on_reprovision.emit(())
+                            })}
+                            title="Re-provision external resources"
+                            class="text-xs text-stone-400 dark:text-stone-500
+                                hover:text-amber-600 dark:hover:text-amber-400
+                                transition-colors"
+                        >
+                            {"⟳ Re-provision"}
+                        </button>
+
+                        // Delete button (existing code)
                         if *confirm_delete {
                             <div class="flex items-center gap-2 text-xs">
                                 <span class="text-stone-500 dark:text-stone-400">{"Delete?"}</span>
