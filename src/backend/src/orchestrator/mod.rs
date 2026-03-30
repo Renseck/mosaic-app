@@ -161,13 +161,8 @@ impl Orchestrator {
         if let Some(ref old_uid) = old_grafana_uid {
             let panel_repo = PgPanelRepo { pool: self.pool.clone() };
 
-            let new_slug = new_grafana_url
-                .rsplit('/')
-                .next()
-                .unwrap_or("dashboard");
-
             let old_prefix = format!("/proxy/grafana/d/{old_uid}");
-            let new_prefix = format!("/proxy/grafana/d/{new_grafana_uid}/{new_slug}");
+            let new_prefix = format!("/proxy/grafana/d/{new_grafana_uid}");
 
             match panel_repo.update_source_url_prefix(&old_prefix, &new_prefix).await {
                 Ok(count) => {
