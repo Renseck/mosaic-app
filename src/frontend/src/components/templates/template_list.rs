@@ -114,6 +114,7 @@ pub fn template_list() -> Html {
                                 <TemplateCard
                                     template={t.clone()}
                                     is_admin={is_admin}
+                                    is_owner={t.created_by.as_deref() == auth.user.as_ref().map(|u| u.id.as_str())}
                                     on_delete={on_delete}
                                     on_open_form={on_open_form}
                                     on_reprovision={on_reprovision}
@@ -146,6 +147,7 @@ pub fn template_list() -> Html {
 struct TemplateCardProps {
     template:       DatasetTemplate,
     is_admin:       bool,
+    is_owner:       bool,
     on_delete:      Callback<()>,
     on_open_form:   Callback<String>,
     on_reprovision: Callback<()>,
@@ -229,9 +231,9 @@ fn template_card(props: &TemplateCardProps) -> Html {
                 </div>
 
                 /* ================================ Admin actions =============================== */
-                if props.is_admin {
-                    <div class="shrink-0 flex items-center">
-                        // Re-provision button
+                <div class="shrink-0 flex items-center gap-2">
+                    // Re-provision — admin only
+                    if props.is_admin {
                         <button
                             onclick={Callback::from({
                                 let on_reprovision = props.on_reprovision.clone();
@@ -244,8 +246,10 @@ fn template_card(props: &TemplateCardProps) -> Html {
                         >
                             {"⟳ Re-provision"}
                         </button>
+                    }
 
-                        // Delete button (existing code)
+                    // Delete — owner or admin
+                    if props.is_owner || props.is_admin {
                         if *confirm_delete {
                             <div class="flex items-center gap-2 text-xs">
                                 <span class="text-stone-500 dark:text-stone-400">{"Delete?"}</span>
@@ -264,7 +268,7 @@ fn template_card(props: &TemplateCardProps) -> Html {
                                         move |_: MouseEvent| confirm.set(false)
                                     })}
                                     class="text-stone-400 dark:text-stone-500
-                                           hover:text-stone-600 dark:hover:text-stone-300"
+                                        hover:text-stone-600 dark:hover:text-stone-300"
                                 >
                                     {"Cancel"}
                                 </button>
@@ -277,14 +281,14 @@ fn template_card(props: &TemplateCardProps) -> Html {
                                 })}
                                 title="Delete template"
                                 class="text-stone-300 dark:text-stone-600
-                                       hover:text-red-500 dark:hover:text-red-400
-                                       transition-colors text-sm"
+                                    hover:text-red-500 dark:hover:text-red-400
+                                    transition-colors text-sm"
                             >
                                 {"✕"}
                             </button>
                         }
-                    </div>
-                }
+                    }
+                </div>
             </div>
         </div>
     }

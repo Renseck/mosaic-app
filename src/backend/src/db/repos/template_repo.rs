@@ -60,6 +60,7 @@ pub struct UpdateExternalIds {
 #[async_trait::async_trait]
 pub trait TemplateRepo: Send + Sync {
     async fn list_all(&self) -> Result<Vec<Template>, AppError>;
+    async fn list_for_user(&self, user_id: Uuid) -> Result<Vec<Template>, AppError>;
     async fn get_by_id(&self, id: Uuid) -> Result<Template, AppError>;
     async fn create(&self, record: CreateTemplateRecord) -> Result<Template, AppError>;
     async fn delete(&self, id: Uuid) -> Result<(), AppError>;
@@ -103,6 +104,23 @@ impl TemplateRepo for PgTemplateRepo {
             FROM portal.dataset_templates
             ORDER BY created_at DESC
             "#
+        )
+        .fetch_all(&self.pool)
+        .await?;
+        Ok(rows.into_iter().map(|r| map_template!(r)).collect())
+    }
+
+    async fn list_for_user(&self, user_id: Uuid) -> Result<Vec<Template>, AppError> {
+        let rows = sqlx::query!(
+        r#"
+            SELECT id, name, description, nocodb_table_id, nocodb_form_id,
+                grafana_dashboard_uid, fields as "fields!: JsonValue",
+                created_by, created_at, updated_at
+            FROM portal.dataset_templates
+            WHERE created_by = $1
+            ORDER BY created_at DESC
+            "#,
+            user_id
         )
         .fetch_all(&self.pool)
         .await?;
