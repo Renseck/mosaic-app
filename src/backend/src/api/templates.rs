@@ -28,12 +28,16 @@ pub struct CreateTemplateRequest {
 /*                                            Handlers                                            */
 /* ============================================================================================== */
 
-/// GET /api/templates
+/// GET /api/templates - lists templates owned by the caller, or all if admin.
 pub async fn list_templates(
     State(state): State<AppState>,
-    _user: AuthenticatedUser,
+    user: AuthenticatedUser,
 ) -> Result<impl IntoResponse, AppError> {
-    let templates = state.templates.list_all().await?;
+    let templates = if user.role == crate::auth::middleware::Role::Admin {
+        state.templates.list_all().await?
+    } else {
+        state.templates.list_for_user(user.user_id).await?
+    };
     Ok(Json(templates))
 }
 
@@ -41,10 +45,15 @@ pub async fn list_templates(
 /// GET /api/templates/:id
 pub async fn get_template(
     State(state): State<AppState>,
-    _user: AuthenticatedUser,
+    user: AuthenticatedUser,
     Path(id): Path<Uuid>,
 ) -> Result<impl IntoResponse, AppError> {
     let template = state.templates.get_by_id(id).await?;
+    if template.created_by != Some(user.user_id)
+        && user.role == crate::auth::middleware::Role::Admin
+    {
+        return Err(AppError::Forbidden);
+    }
     Ok(Json(template))
 }
 
@@ -91,10 +100,12 @@ pub async fn delete_template(
     user: AuthenticatedUser,
     Path(id): Path<Uuid>,
 ) -> Result<impl IntoResponse, AppError> {
-    if user.role != crate::auth::middleware::Role::Admin {
+    let template = state.templates.get_by_id(id).await?;
+    if template.created_by != Some(user.user_id)
+        && user.role != crate::auth::middleware::Role::Admin
+    {
         return Err(AppError::Forbidden);
     }
-    let template = state.templates.get_by_id(id).await?;
     // Best-effort cleanup of external resources
     state.orchestrator.deprovision_dataset(&template).await;
     state.templates.delete(id).await?;
