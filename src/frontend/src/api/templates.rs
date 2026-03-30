@@ -19,3 +19,8 @@ pub async fn create_template(req: &CreateTemplateRequest) -> Result<DatasetTempl
 pub async fn delete_template(id: &str) -> Result<(), ApiError> {
     client::delete(&format!("/api/templates/{id}")).await
 }
+
+/* ============================================================================================== */
+pub async fn reprovision_template(id: &str) -> Result<DatasetTemplate, ApiError> {
+    client::post_json(&format!("/api/templates/{id}/reprovision"), &()).await
+}
