@@ -7,9 +7,7 @@ use sqlx::PgPool;
 
 
 use crate::db::repos::{
-    dashboard_repo::{self, CreateDashboard, DashboardRepo, PgDashboardRepo},
-    panel_repo::{CreatePanel, PanelRepo, PgPanelRepo},
-    template_repo::{PgTemplateRepo, Template, TemplateRepo},
+    FieldDefinition, dashboard_repo::{self, CreateDashboard, DashboardRepo, PgDashboardRepo}, panel_repo::{CreatePanel, PanelRepo, PgPanelRepo}, template_repo::{PgTemplateRepo, Template, TemplateRepo, UpdateExternalIds}
 };
 use crate::error::AppError;
 use provisioner::{CreateTemplate, Pipeline, Unstarted};
@@ -91,6 +89,100 @@ impl Orchestrator {
                 tracing::warn!("Failed to delete Grafana dashboard '{uid}': {e}");
             }
         }
+    }
+
+    /// Re-provision external resources for an existing template.
+    ///
+    /// 1. Best-effort cleanup of old NocoDB table and Grafana dashboard
+    /// 2. Create fresh NocoDB table + form + Grafana dashboard from stored field definitions
+    /// 3. Update the template record with new external IDs
+    /// 4. Update any portal panels that referenced the old Grafana dashboard URL
+    pub async fn reprovision_dataset(
+        &self,
+        template: &Template,
+    ) -> Result<Template, AppError> {
+        // Parse fields back from JSON
+        let fields: Vec<FieldDefinition> = serde_json::from_value(template.fields.clone())
+            .map_err(|e| AppError::Internal(anyhow::anyhow!(
+                "failed to parse template fields: {e}"
+            )))?;
+
+        let user_id = template.created_by.unwrap_or_default();
+
+        // Capture old identifiers for cleanup and panel URL rewriting
+        let old_grafana_uid = template.grafana_dashboard_uid.clone();
+
+        // Step 1
+        self.deprovision_dataset(template).await;
+
+        // Steps 2-4
+        let input = CreateTemplateInput {
+            name:           template.name.clone(),
+            description:    template.description.clone(),
+            fields,
+        };
+
+        let pipeline = Pipeline::new(input, user_id);
+        let pipeline = pipeline.create_table(&self.nocodb).await
+            .map_err(|(e, _)| e)?;
+
+        let pipeline = match pipeline.create_form(&self.nocodb).await {
+            Ok(p) => p,
+            Err((e, prev)) => {
+                let _ = self.nocodb.delete_table(&prev.state.table_id).await;
+                return Err(e);
+            }
+        };
+
+        let pipeline = match pipeline.create_grafana_dashboard(&self.grafana).await {
+            Ok(p) => p,
+            Err((e, prev)) => {
+                let _ = self.nocodb.delete_table(&prev.state.table_id).await;
+                return Err(e);
+            }
+        };
+
+        // Step 5: Update the existing template record with new external IDs
+        let new_grafana_uid = pipeline.state.grafana_dashboard_uid.clone();
+        let new_grafana_url = pipeline.state.grafana_dashboard_url.clone();
+        let new_form_uuid   = pipeline.state.form_share_uuid.clone();
+
+        let template_repo = PgTemplateRepo { pool: self.pool.clone() };
+        let updated_template = template_repo.update_external_ids(
+            template.id,
+            UpdateExternalIds {
+                nocodb_table_id:       Some(pipeline.state.table_id),
+                nocodb_form_id:        Some(new_form_uuid),
+                grafana_dashboard_uid: Some(new_grafana_uid.clone()),
+            },
+        ).await?;
+
+        // Step 6: Rewrite panel source_urls that pointed at the old Grafana dashboard
+        if let Some(ref old_uid) = old_grafana_uid {
+            let panel_repo = PgPanelRepo { pool: self.pool.clone() };
+
+            let new_slug = new_grafana_url
+                .rsplit('/')
+                .next()
+                .unwrap_or("dashboard");
+
+            let old_prefix = format!("/proxy/grafana/d/{old_uid}");
+            let new_prefix = format!("/proxy/grafana/d/{new_grafana_uid}/{new_slug}");
+
+            match panel_repo.update_source_url_prefix(&old_prefix, &new_prefix).await {
+                Ok(count) => {
+                    if count > 0 {
+                        tracing::info!("Updated {count} panel(s) from old Grafana UID {old_uid} → {new_grafana_uid}");
+                    }
+                }
+                Err(e) => {
+                    tracing::warn!("Panel URL rewrite failed (non-fatal): {e}");
+                }
+            }
+        }
+
+        Ok(updated_template)
+
     }
 
     /* ======================================== Internal ======================================== */
