@@ -140,6 +140,23 @@ services:
       PORTAL_ADMIN_PASSWORD: ${PORTAL_ADMIN_PASSWORD:-Owner1234!}
     restart: "no"
 
+  backup:
+    build:
+      context: ./backup
+    pull_policy: build
+    container_name: mosaic-backup
+    depends_on:
+      postgres: { condition: service_healthy }
+    environment:
+      PGHOST: postgres
+      PGUSER: portal
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      KEEP_DAILY: "7"
+      KEEP_WEEKLY: "4"
+    volumes:
+      - backups:/backups
+    restart: unless-stopped
+
 volumes:
   pgdata:
     name: mosaic-pgdata
@@ -149,3 +166,5 @@ volumes:
     name: mosaic-grafana-data
   nocodb-data:
     name: mosaic-nocodb-data
+  backups:
+    name: mosaic-backups
