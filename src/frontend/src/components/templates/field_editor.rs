@@ -74,7 +74,7 @@ pub fn field_editor(props: &FieldEditorProps) -> Html {
                         let remove_cb = on_remove(i);
                         let type_badge_class = match field.field_type.as_str() {
                             "number" => "bg-amber-100 dark:bg-amber-900 /30 text-amber-800 dark:text-amber-300",
-                            "date"   => "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300",
+                            "date" | "datetime" => "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300",
                             "select" => "bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-ambpurpleer-300",
                             _        => "bg-stone-100 dark:bg-stone-900 text-stone-700 dark:text-stone-400",
                         };
@@ -153,6 +153,7 @@ pub fn field_editor(props: &FieldEditorProps) -> Html {
                     <option value="number">{"number"}</option>
                     <option value="text">{"text"}</option>
                     <option value="date">{"date"}</option>
+                    <option value="datetime">{"datetime"}</option>
                     <option value="select">{"select"}</option>
                 </select>
 

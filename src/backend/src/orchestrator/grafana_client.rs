@@ -98,11 +98,13 @@ impl GrafanaClient {
     ) -> Value {
         let qualified_table = format!(r#"{base_id}."{table_name}""#);
 
-        let has_measured_at = fields.iter().any(|f| f.name == "measured_at");
-        let time_expr = if has_measured_at {
-            "COALESCE(measured_at, created_at)"
-        } else {
-            "created_at"
+        let measured_at_field = fields.iter().find(|f| f.name == "measured_at");
+        let time_expr = match measured_at_field {
+            None => "created_at".to_string(),
+            // DATE column in Postgres — needs explicit cast for $__timeFilter
+            Some(f) if f.field_type == "date" => "COALESCE(measured_at::timestamptz, created_at)".to_string(),
+            // DateTime → TIMESTAMPTZ — no cast needed
+            Some(_) => "COALESCE(measured_at, created_at)".to_string(),
         };
 
         let numeric: Vec<&FieldDefinition> = fields

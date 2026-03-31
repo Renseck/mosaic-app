@@ -84,6 +84,36 @@ pub fn template_wizard() -> Html {
     /* ====================================== Wizard shell ====================================== */
     let step_idx = match *step { Step::Name => 0, Step::Fields => 1, Step::Preview => 2 };
 
+    let measured_at_type = (*fields).iter()
+        .find(|f| f.name == "measured_at")
+        .map(|f| f.field_type.clone())
+        .unwrap_or_else(|| "date".to_string());
+
+    let toggle_measured_at = Callback::from({
+        let fields = fields.clone();
+        move |new_type: String| {
+            let mut updated = (*fields).clone();
+            if let Some(f) = updated.iter_mut().find(|f| f.name == "measured_at") {
+                f.field_type = new_type;
+            }
+            fields.set(updated);
+        }
+    });
+
+    let date_btn_cls = if measured_at_type == "date" {
+        "px-3 py-1 text-xs font-semibold rounded-l-md border border-blue-400 bg-blue-500 text-white"
+    } else {
+        "px-3 py-1 text-xs font-semibold rounded-l-md border border-stone-300 dark:border-stone-600 \
+        bg-white dark:bg-stone-700 text-stone-600 dark:text-stone-300 hover:bg-stone-50"
+    };
+    let datetime_btn_cls = if measured_at_type == "datetime" {
+        "px-3 py-1 text-xs font-semibold rounded-r-md border border-blue-400 bg-blue-500 text-white"
+    } else {
+        "px-3 py-1 text-xs font-semibold rounded-r-md border border-l-0 border-stone-300 dark:border-stone-600 \
+        bg-white dark:bg-stone-700 text-stone-600 dark:text-stone-300 hover:bg-stone-50"
+    };
+    let is_datetime = measured_at_type == "datetime";
+
     html! {
         <div class="max-w-2xl mx-auto space-y-6">
 
@@ -231,20 +261,42 @@ pub fn template_wizard() -> Html {
                             // Hint about measured_at — only visible while users can still see/remove it
                             if fields.iter().any(|f| f.name == "measured_at") {
                                 <div class="rounded-lg bg-blue-50 dark:bg-blue-800 border border-blue-100 dark:border-blue-900 px-4 py-3
-                                            text-xs text-blue-700 dark:text-blue-200 space-y-1">
+                                            text-xs text-blue-700 dark:text-blue-200 space-y-2">
                                     <p class="font-semibold text-blue-800 dark:text-blue-100">
                                         {"💡 About the measured_at field"}
                                     </p>
                                     <p>
                                         {"This field lets you record when a measurement was actually taken, \
-                                          even if you enter it into the system later. Grafana will use it as \
-                                          the time axis instead of the entry date."}
+                                        even if you enter it into the system later. Grafana will use it as \
+                                        the time axis instead of the entry date."}
                                     </p>
                                     <p>
                                         {"If left blank on a row, Grafana will fall back to the entry date \
-                                          automatically. You may remove this field if your data is always \
-                                          entered on the same day it is measured."}
+                                        automatically. You may remove this field if your data is always \
+                                        entered on the same day it is measured."}
                                     </p>
+                                    <div class="flex items-center gap-2 pt-1">
+                                        <span class="font-medium">{"Precision:"}</span>
+                                        <div class="inline-flex">
+                                            <button type="button" class={date_btn_cls}
+                                                onclick={Callback::from({
+                                                    let cb = toggle_measured_at.clone();
+                                                    move |_: MouseEvent| cb.emit("date".to_string())
+                                                })}>
+                                                {"Date"}
+                                            </button>
+                                            <button type="button" class={datetime_btn_cls}
+                                                onclick={Callback::from({
+                                                    let cb = toggle_measured_at.clone();
+                                                    move |_: MouseEvent| cb.emit("datetime".to_string())
+                                                })}>
+                                                {"Date + Time"}
+                                            </button>
+                                        </div>
+                                        if is_datetime {
+                                            <span class="italic">{"— supports multiple measurements per day"}</span>
+                                        }
+                                    </div>
                                 </div>
                             }
 
@@ -319,10 +371,11 @@ pub fn template_wizard() -> Html {
                                         <div class="space-y-1.5">
                                             { for fields_snap.iter().map(|f| {
                                                 let badge = match f.field_type.as_str() {
-                                                    "number" => "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300",
-                                                    "date"   => "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300",
-                                                    "select" => "bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-300",
-                                                    _        => "bg-stone-100 dark:bg-stone-900 text-stone-700 dark:text-stone-400",
+                                                    "number"   => "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300",
+                                                    "date" | "datetime"
+                                                            => "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300",
+                                                    "select"   => "bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-300",
+                                                    _          => "bg-stone-100 dark:bg-stone-900 text-stone-700 dark:text-stone-400",
                                                 };
                                                 html! {
                                                     <div class="flex items-center gap-2">

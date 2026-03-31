@@ -88,9 +88,10 @@ impl NocodbClient {
                     "uidt":  "Decimal",
                     "meta":  { "precision": 8 }
                 }),
-                "date"   => json!({ "title": field.name, "uidt": "Date" }),
-                "select" => json!({ "title": field.name, "uidt": "SingleSelect" }),
-                _        => json!({ "title": field.name, "uidt": "SingleLineText" }),
+                "date"     => json!({ "title": field.name, "uidt": "Date" }),
+                "datetime" => json!({ "title": field.name, "uidt": "DateTime" }),
+                "select"   => json!({ "title": field.name, "uidt": "SingleSelect" }),
+                _          => json!({ "title": field.name, "uidt": "SingleLineText" }),
             }
         }).collect();
 
@@ -193,9 +194,10 @@ impl NocodbClient {
                     "uidt":  "Decimal",
                     "meta":  { "precision": 8 }
                 }),
-                "date"   => json!({ "title": field.name, "uidt": "Date" }),
-                "select" => json!({ "title": field.name, "uidt": "SingleSelect" }),
-                _        => json!({ "title": field.name, "uidt": "SingleLineText" }),
+                "date"     => json!({ "title": field.name, "uidt": "Date" }),
+                "datetime" => json!({ "title": field.name, "uidt": "DateTime" }),
+                "select"   => json!({ "title": field.name, "uidt": "SingleSelect" }),
+                _          => json!({ "title": field.name, "uidt": "SingleLineText" }),
             };
             self.client
                 .post(self.url(&format!("/api/v2/meta/tables/{table_id}/fields")))
