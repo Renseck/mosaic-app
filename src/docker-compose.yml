@@ -126,6 +126,14 @@ services:
       timeout: 5s
       retries: 20
     restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mosaic.rule=Host(`mosaic.local`)"
+      - "traefik.http.routers.mosaic.entrypoints=web"
+      - "traefik.http.services.mosaic.loadbalancer.server.port=8080"
+    networks:
+      - proxy
+      - default
 
   portal-init:
     build: 
@@ -168,3 +176,7 @@ volumes:
     name: mosaic-nocodb-data
   backups:
     name: mosaic-backups
+
+networks:
+  proxy:
+    external: true
