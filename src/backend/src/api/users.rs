@@ -7,7 +7,7 @@ use reqwest::StatusCode;
 use serde::Deserialize;
 use uuid::Uuid;
 
-use crate::auth::{middleware::{AuthenticatedUser, RequireAdmin, Role}, password};
+use crate::auth::{middleware::{RequireAdmin, Role}, password};
 use crate::error::AppError;
 use crate::AppState;
 

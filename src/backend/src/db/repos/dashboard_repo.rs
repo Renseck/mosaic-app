@@ -161,11 +161,10 @@ impl DashboardRepo for PgDashboardRepo {
         .await
         .map(|r| map_dashboard!(r))
         .map_err(|e| {
-            if let sqlx::Error::Database(ref db_err) =e {
-                if db_err.constraint() == Some("dashboards_slug_key") {
+            if let sqlx::Error::Database(ref db_err) =e
+                && db_err.constraint() == Some("dashboards_slug_key") {
                     return AppError::Validation(format!("slug '{slug}' is already taken"));
                 }
-            }
             AppError::Database(e)
         })
     }

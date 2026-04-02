@@ -2,15 +2,14 @@ pub mod grafana_client;
 pub mod nocodb_client;
 pub mod provisioner;
 
-use std::{io::pipe, sync::Arc};
 use sqlx::PgPool;
 
 
 use crate::db::repos::{
-    FieldDefinition, dashboard_repo::{self, CreateDashboard, DashboardRepo, PgDashboardRepo}, panel_repo::{CreatePanel, PanelRepo, PgPanelRepo}, template_repo::{PgTemplateRepo, Template, TemplateRepo, UpdateExternalIds}
+    FieldDefinition, dashboard_repo::{CreateDashboard, DashboardRepo, PgDashboardRepo}, panel_repo::{CreatePanel, PanelRepo, PgPanelRepo}, template_repo::{PgTemplateRepo, Template, TemplateRepo, UpdateExternalIds}
 };
 use crate::error::AppError;
-use provisioner::{CreateTemplate, Pipeline, Unstarted};
+use provisioner::Pipeline;
 pub use provisioner::CreateTemplate as CreateTemplateInput;
 pub use nocodb_client::{NocodbClient};
 pub use grafana_client::GrafanaClient;
@@ -79,16 +78,14 @@ impl Orchestrator {
 
     /// Best-effort cleanup when a template is deleted.
     pub async fn deprovision_dataset(&self, template: &Template) {
-        if let Some(ref table_id) = template.nocodb_table_id {
-            if let Err(e) = self.nocodb.delete_table(table_id).await {
+        if let Some(ref table_id) = template.nocodb_table_id
+            && let Err(e) = self.nocodb.delete_table(table_id).await {
                 tracing::warn!("Failed to delete NocoDB table '{table_id}': {e}");
             }
-        }
-        if let Some(ref uid) = template.grafana_dashboard_uid {
-            if let Err(e) = self.grafana.delete_dashboard(uid).await {
+        if let Some(ref uid) = template.grafana_dashboard_uid
+            && let Err(e) = self.grafana.delete_dashboard(uid).await {
                 tracing::warn!("Failed to delete Grafana dashboard '{uid}': {e}");
             }
-        }
     }
 
     /// Re-provision external resources for an existing template.
@@ -144,7 +141,7 @@ impl Orchestrator {
 
         // Step 5: Update the existing template record with new external IDs
         let new_grafana_uid = pipeline.state.grafana_dashboard_uid.clone();
-        let new_grafana_url = pipeline.state.grafana_dashboard_url.clone();
+        let _new_grafana_url = pipeline.state.grafana_dashboard_url.clone();
         let new_form_uuid   = pipeline.state.form_share_uuid.clone();
 
         let template_repo = PgTemplateRepo { pool: self.pool.clone() };
@@ -188,7 +185,7 @@ impl Orchestrator {
         owner_id:           Uuid,
         grafana_uid:        &str,
         grafana_url:        &str,  // e.g. "/d/{uid}/{slug}"
-        nocodb_form_uuid:   &str,
+        _nocodb_form_uuid:   &str,
     ) -> Result<(), AppError> {
         let dashboard_repo = PgDashboardRepo { pool: self.pool.clone() };
         let panel_repo = PgPanelRepo { pool: self.pool.clone() };

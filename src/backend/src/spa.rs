@@ -18,19 +18,16 @@ pub async fn spa_handler(uri: Uri) -> Response {
     let file_path = PathBuf::from(dist_dir()).join(path);
 
     if file_path.is_file() {
-        match fs::read(&file_path).await {
-            Ok(bytes) => {
-                let mime = mime_guess::from_path(&file_path)
-                    .first_or_octet_stream()
-                    .to_string();
-                return (
-                    StatusCode::OK,
-                    [(axum::http::header::CONTENT_TYPE, mime)],
-                    bytes,
-                )
-                    .into_response();
-            }
-            Err(_) => {}
+        if let Ok(bytes) = fs::read(&file_path).await {
+            let mime = mime_guess::from_path(&file_path)
+                .first_or_octet_stream()
+                .to_string();
+            return (
+                StatusCode::OK,
+                [(axum::http::header::CONTENT_TYPE, mime)],
+                bytes,
+            )
+                .into_response();
         }
     }
 
